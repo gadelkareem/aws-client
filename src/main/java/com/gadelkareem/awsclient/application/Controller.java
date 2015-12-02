@@ -45,6 +45,9 @@ public class Controller {
         List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
         List<String> columns = new ArrayList<String>();
 
+        String firstColumnKey = "Name";
+
+        columns.add(firstColumnKey);
         columns.add("Instance ID");
         columns.add("Group");
         columns.add("Instance Type");
@@ -53,6 +56,7 @@ public class Controller {
         columns.add("Private IP");
 
 
+        boolean hasFirstColumnKey = false;
         reservations:
         {
             for (Reservation reservation :
@@ -61,6 +65,7 @@ public class Controller {
 
                     ObservableList<StringProperty> row = FXCollections.observableArrayList();
 
+                    row.add(new SimpleStringProperty(""));
                     row.add(new SimpleStringProperty(instance.getInstanceId()));
                     row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
                     row.add(new SimpleStringProperty(instance.getInstanceType()));
@@ -68,11 +73,11 @@ public class Controller {
                     row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
                     row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
 
+
                     for (Tag tag : instance.getTags()) {
-                        if (tag.getKey().equals("Name")) {
-                            if (!columns.contains(tag.getKey()))
-                                columns.add(0, tag.getKey());
-                            row.add(0, new SimpleStringProperty(tag.getValue()));
+                        if (tag.getKey().equals(firstColumnKey)) {
+                            row.set(0, new SimpleStringProperty(tag.getValue()));
+                            hasFirstColumnKey = true;
                         } else {
                             if (!columns.contains("Tag::" + tag.getKey()))
                                 columns.add("Tag::" + tag.getKey());
@@ -85,6 +90,16 @@ public class Controller {
             }
         }
 
+        if (!hasFirstColumnKey) {
+            columns.remove(0);
+            for (ObservableList row : rows) {
+                row.remove(0);
+            }
+        }
+
+
+        tableView.getItems().clear();
+        tableView.getColumns().clear();
 
         for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
             tableView.getColumns().addAll(createColumn(columnIndex, columns.get(columnIndex)));
