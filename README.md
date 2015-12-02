@@ -1,2 +1,2 @@
-# aws-client
+# AWS Client
 Desktop AWS java client
