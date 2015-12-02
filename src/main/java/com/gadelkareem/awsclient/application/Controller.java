@@ -21,6 +21,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class Controller {
 
@@ -39,14 +42,16 @@ public class Controller {
         AmazonEC2 amazonEC2 = new AmazonEC2Client(awsCredentials);
         amazonEC2.setRegion(Region.getRegion(Regions.EU_WEST_1));
 
+        List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
+        List<String> columns = new ArrayList<String>();
 
-        addColumn(0, "Name");
-        addColumn(1, "Group");
-        addColumn(2, "Instance ID");
-        addColumn(3, "Instance Type");
-        addColumn(4, "Instance State");
-        addColumn(5, "Public IP");
-        addColumn(6, "Private IP");
+        columns.add("Instance ID");
+        columns.add("Group");
+        columns.add("Instance Type");
+        columns.add("Instance State");
+        columns.add("Public IP");
+        columns.add("Private IP");
+
 
         reservations:
         {
@@ -54,40 +59,45 @@ public class Controller {
                     amazonEC2.describeInstances(new DescribeInstancesRequest()).getReservations()) {
                 for (Instance instance : reservation.getInstances()) {
 
-                    String instanceName = instance.getInstanceId();
+                    ObservableList<StringProperty> row = FXCollections.observableArrayList();
+
+                    row.add(new SimpleStringProperty(instance.getInstanceId()));
+                    row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
+                    row.add(new SimpleStringProperty(instance.getInstanceType()));
+                    row.add(new SimpleStringProperty(instance.getState().getName()));
+                    row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
+                    row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
+
                     for (Tag tag : instance.getTags()) {
                         if (tag.getKey().equals("Name")) {
-                            instanceName = tag.getValue();
-                            break;
+                            if (!columns.contains(tag.getKey()))
+                                columns.add(0, tag.getKey());
+                            row.add(0, new SimpleStringProperty(tag.getValue()));
+                        } else {
+                            if (!columns.contains("Tag::" + tag.getKey()))
+                                columns.add("Tag::" + tag.getKey());
+                            row.add(new SimpleStringProperty(tag.getValue()));
                         }
                     }
-                    String[] values = {
-                            instanceName,
-                            instance.getSecurityGroups().get(0).getGroupName(),
-                            instance.getInstanceId(),
-                            instance.getInstanceType(),
-                            instance.getState().getName(),
-                            instance.getPublicIpAddress(),
-                            instance.getPrivateIpAddress()
-                    };
-                    addRow(values);
+                    rows.add(row);
 //                    break reservations;
                 }
             }
         }
 
-    }
 
-    private void addRow(String[] values) {
-        ObservableList<StringProperty> row = FXCollections.observableArrayList();
-        for (String value : values) {
-            row.add(new SimpleStringProperty(value));
+        for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
+            tableView.getColumns().addAll(createColumn(columnIndex, columns.get(columnIndex)));
         }
-        tableView.getItems().add(row);
+
+        tableView.getItems().addAll(rows);
     }
 
-    private void addColumn(final int columnIndex, String columnTitle) {
-        
+    private TableColumn<ObservableList<StringProperty>, String> createColumn(
+            final int columnIndex,
+            String columnTitle
+    ) {
+
         TableColumn<ObservableList<StringProperty>, String> column = new TableColumn<ObservableList<StringProperty>, String>();
         column.setText(columnTitle);
 
@@ -102,7 +112,7 @@ public class Controller {
                 }
             }
         });
-        tableView.getColumns().addAll(column);
+        return column;
     }
 
 
