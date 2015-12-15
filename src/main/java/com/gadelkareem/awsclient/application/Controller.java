@@ -4,6 +4,7 @@ package com.gadelkareem.awsclient.application;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
@@ -17,6 +18,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
@@ -28,19 +30,26 @@ import java.util.List;
 public class Controller {
 
     public TableView tableView;
+    public ChoiceBox regionMenu;
 
 
     //INITIALIZE
     @FXML
     void initialize() {
-        listEc2();
+        drawTable();
     }
 
-    private void listEc2() {
+    private void drawTable() {
+
+        Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
+
+        regionMenu.getItems().addAll(RegionUtils.getRegions());
+        regionMenu.getSelectionModel().select(defaultRegion);
 
         AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
         AmazonEC2 amazonEC2 = new AmazonEC2Client(awsCredentials);
-        amazonEC2.setRegion(Region.getRegion(Regions.EU_WEST_1));
+
+        amazonEC2.setRegion(defaultRegion);
 
         List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
         List<String> columns = new ArrayList<String>();
@@ -83,9 +92,10 @@ public class Controller {
                             row.set(0, new SimpleStringProperty(tag.getValue()));
                             hasFirstColumnKey = true;
                         } else {
-                            if (!columns.contains("Tag::" + tag.getKey()))
-                                columns.add("Tag::" + tag.getKey());
-                            row.set(columns.indexOf("Tag::" + tag.getKey()), new SimpleStringProperty(tag.getValue()));
+                            String columnHeader = "Tag::" + tag.getKey();
+                            if (!columns.contains(columnHeader))
+                                columns.add(columnHeader);
+                            row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getValue()));
                         }
                     }
 
