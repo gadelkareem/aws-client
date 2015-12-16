@@ -58,11 +58,13 @@ public class Controller {
 
         columns.add(firstColumnKey);
         columns.add("Instance ID");
-        columns.add("Group");
+        columns.add("Instance Load");
+        columns.add("Security Group");
         columns.add("Instance Type");
         columns.add("Instance State");
         columns.add("Public IP");
         columns.add("Private IP");
+        columns.add("Key Name");
 
 
         boolean hasFirstColumnKey = false;
@@ -77,11 +79,13 @@ public class Controller {
                     ObservableList<StringProperty> row = FXCollections.observableArrayList();
                     row.add(new SimpleStringProperty(""));
                     row.add(new SimpleStringProperty(instance.getInstanceId()));
+                    row.add(new SimpleStringProperty(""));
                     row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
                     row.add(new SimpleStringProperty(instance.getInstanceType()));
                     row.add(new SimpleStringProperty(instance.getState().getName()));
                     row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
                     row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
+                    row.add(new SimpleStringProperty(instance.getKeyName()));
 
                     maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
                     for (int i = 0; i < maxTagsCount; i++) {
