@@ -32,24 +32,24 @@ public class Controller {
     public TableView tableView;
     public ChoiceBox regionMenu;
 
+    private Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
+    AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
 
     //INITIALIZE
     @FXML
     void initialize() {
-        drawTable();
+        showRegionsMenu();
+        showEc2s();
     }
 
-    private void drawTable() {
-
-        Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
-
+    private void showRegionsMenu() {
         regionMenu.getItems().addAll(RegionUtils.getRegions());
         regionMenu.getSelectionModel().select(defaultRegion);
+    }
 
-        AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+    private void showEc2s() {
         AmazonEC2 amazonEC2 = new AmazonEC2Client(awsCredentials);
-
-        amazonEC2.setRegion(defaultRegion);
+        amazonEC2.setRegion((Region) regionMenu.getSelectionModel().getSelectedItem());
 
         List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
         List<String> columns = new ArrayList<String>();
