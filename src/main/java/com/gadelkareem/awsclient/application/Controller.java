@@ -18,9 +18,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.util.Callback;
 
 import java.util.ArrayList;
@@ -125,6 +123,12 @@ public class Controller {
         }
 
         tableView.getItems().addAll(rows);
+        tableView.setColumnResizePolicy(new Callback<TableView.ResizeFeatures, Boolean>() {
+            public Boolean call(TableView.ResizeFeatures p) {
+                return true;
+            }
+        });
+
     }
 
     private TableColumn<ObservableList<StringProperty>, String> createColumn(
@@ -145,10 +149,11 @@ public class Controller {
                     return cellDataFeatures.getValue().get(columnIndex);
                 }
             }
+
+
         });
         return column;
     }
-
 
 }
 
