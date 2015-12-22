@@ -1,11 +1,18 @@
 package com.gadelkareem.awsclient.application;
 
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.regions.ServiceAbbreviations;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClient;
+import com.amazonaws.services.cloudwatch.model.Datapoint;
+import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
+import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
@@ -18,20 +25,25 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.util.Callback;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
 public class Controller {
 
+
     public TableView tableView;
     public ChoiceBox regionMenu;
 
     private Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
-    AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+    private AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+
 
     //INITIALIZE
     @FXML
@@ -46,8 +58,11 @@ public class Controller {
     }
 
     private void showEc2s() {
-        AmazonEC2 amazonEC2 = new AmazonEC2Client(awsCredentials);
-        amazonEC2.setRegion((Region) regionMenu.getSelectionModel().getSelectedItem());
+        Region region = (Region) regionMenu.getSelectionModel().getSelectedItem();
+        AmazonEC2 amazonEC2Client = new AmazonEC2Client(awsCredentials);
+        AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
+        amazonEC2Client.setRegion(region);
+        cloudWatchClient.setEndpoint(region.getServiceEndpoint(ServiceAbbreviations.CloudWatch));
 
         List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
         List<String> columns = new ArrayList<String>();
@@ -70,14 +85,16 @@ public class Controller {
         reservations:
         {
             for (Reservation reservation :
-                    amazonEC2.describeInstances(new DescribeInstancesRequest()).getReservations()) {
+                    amazonEC2Client.describeInstances(new DescribeInstancesRequest()).getReservations()) {
                 for (Instance instance : reservation.getInstances()) {
 
 
                     ObservableList<StringProperty> row = FXCollections.observableArrayList();
                     row.add(new SimpleStringProperty(""));
                     row.add(new SimpleStringProperty(instance.getInstanceId()));
-                    row.add(new SimpleStringProperty(""));
+                    String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
+
+                    row.add(new SimpleStringProperty(instanceLoad));
                     row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
                     row.add(new SimpleStringProperty(instance.getInstanceType()));
                     row.add(new SimpleStringProperty(instance.getState().getName()));
@@ -155,6 +172,41 @@ public class Controller {
         return column;
     }
 
+    public static double monitorInstance(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
+        try {
+
+            long offsetInMilliseconds = 1000 * 60 * 60 * 24;
+            GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
+                    .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
+                    .withNamespace("AWS/EC2")
+                    .withPeriod(60 * 60)
+                    .withDimensions(new Dimension().withName("InstanceId").withValue(instanceId))
+                    .withMetricName("CPUUtilization")
+                    .withStatistics("Average", "Maximum")
+                    .withEndTime(new Date());
+            GetMetricStatisticsResult getMetricStatisticsResult = cloudWatchClient.getMetricStatistics(request);
+
+            double avgCPUUtilization = 0;
+            List dataPoint = getMetricStatisticsResult.getDatapoints();
+            for (Object aDataPoint : dataPoint) {
+                Datapoint dp = (Datapoint) aDataPoint;
+                avgCPUUtilization = dp.getAverage();
+            }
+
+            return avgCPUUtilization;
+
+        } catch (AmazonServiceException ase) {
+            System.out.println("Caught an AmazonServiceException, which means the request was made  "
+                    + "to Amazon EC2, but was rejected with an error response for some reason.");
+            System.out.println("Error Message:    " + ase.getMessage());
+            System.out.println("HTTP Status Code: " + ase.getStatusCode());
+            System.out.println("AWS Error Code:   " + ase.getErrorCode());
+            System.out.println("Error Type:       " + ase.getErrorType());
+            System.out.println("Request ID:       " + ase.getRequestId());
+
+        }
+        return 0;
+    }
 }
 
 
