@@ -30,8 +30,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.Callback;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -62,15 +60,16 @@ public class Controller {
                 final ObservableList<StringProperty> selectedRow = rows.get(selectedIndex);
                 final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
                 try {
-                    Process process = Runtime.getRuntime().exec("/usr/bin/open -a /Applications/Utilities/Terminal.app /bin/bash");
-                    int launched = process.waitFor();
-                    BufferedWriter terminal = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
-                    System.out.println(launched);
-                    terminal.write("/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i ~/.aws/.ec2/dublin.pem ubuntu@" + selectedRow.get(publicDnsNameIndex).getValue() + "\n");
-                    //alert("",process.getErrorStream().toString(),"");
-
+                    final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
+                            "-e", "tell app \"Terminal\"",
+                            "-e", "set currentTab to do script " +
+                            "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i ~/.ssh/.ec2/dublin.pem ubuntu@" +
+                            selectedRow.get(publicDnsNameIndex).getValue() + "\")",
+                            "-e", "end tell");
+                    final Process process = processBuilder.start();
+                    process.waitFor();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    error(e.getMessage(), e.getStackTrace().toString());
                 }
 
             }
@@ -223,26 +222,24 @@ public class Controller {
 
             return avgCPUUtilization;
 
-        } catch (AmazonServiceException ase) {
-            System.out.println("Caught an AmazonServiceException, which means the request was made  "
-                    + "to Amazon EC2, but was rejected with an error response for some reason.");
-            System.out.println("Error Message:    " + ase.getMessage());
-            System.out.println("HTTP Status Code: " + ase.getStatusCode());
-            System.out.println("AWS Error Code:   " + ase.getErrorCode());
-            System.out.println("Error Type:       " + ase.getErrorType());
-            System.out.println("Request ID:       " + ase.getRequestId());
+        } catch (AmazonServiceException e) {
+            error(e.getMessage(), e.getRawResponseContent());
 
         }
         return 0;
     }
 
-    private static Alert alert(String title, String header, String text) {
-        final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    private static Alert alert(Alert.AlertType alertType, String title, String header, String text) {
+        final Alert alert = new Alert(alertType);
         alert.setTitle(title);
         alert.setHeaderText(header);
         alert.setContentText(text);
         alert.showAndWait();
         return alert;
+    }
+
+    private static Alert error(String message, String text) {
+        return alert(Alert.AlertType.ERROR, "Error!", message, text);
     }
 }
 
