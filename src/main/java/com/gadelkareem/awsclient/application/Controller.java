@@ -3,6 +3,7 @@ package com.gadelkareem.awsclient.application;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
@@ -19,6 +20,7 @@ import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.Tag;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
@@ -28,11 +30,17 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.util.Callback;
 
+import java.awt.*;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 
 public class Controller {
@@ -41,9 +49,17 @@ public class Controller {
     public TableView tableView;
     public ChoiceBox regionMenu;
     public MenuItem launchShell;
+    public MenuItem refreshTable;
 
+    //Preferences form
+    public GridPane preferencesForm;
+    public TextField preferencesAccessKey;
+    public TextField preferencesSecretKey;
+    public CheckBox preferencesDisplayLoad;
+
+    private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
-    private AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+    private AWSCredentials awsCredentials;
 
     private List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
     private List<String> columns = new ArrayList<String>();
@@ -52,8 +68,45 @@ public class Controller {
     //INITIALIZE
     @FXML
     void initialize() {
-        showRegionsMenu();
-        showEc2s();
+        if (!hasPreferences()) {
+            awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+            initPreferences();
+            return;
+        }
+        initView();
+    }
+
+    private void initView() {
+        awsCredentials = new BasicAWSCredentials(userPreferences.get("aws.access_key", ""), userPreferences.get("aws.secret_key", ""));
+        initRegionsMenu();
+        initEc2View();
+        initContextMenu();
+    }
+
+    private boolean hasPreferences() {
+        return !(userPreferences.get("aws.access_key", "").isEmpty() && userPreferences.get("aws.secret_key", "").isEmpty());//!(awsCredentials.getAWSAccessKeyId().isEmpty() && awsCredentials.getAWSSecretKey().isEmpty());
+    }
+
+    @FXML
+    private void initPreferences() {
+        tableView.setVisible(false);
+        regionMenu.setVisible(false);
+        preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
+        preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
+        preferencesDisplayLoad.selectedProperty().setValue(userPreferences.getBoolean("view.column.load", false));
+        preferencesForm.setVisible(true);
+    }
+
+    @FXML
+    private void savePreferences() {
+        userPreferences.put("aws.access_key", preferencesAccessKey.getText());
+        userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
+        userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
+        preferencesForm.setVisible(false);
+        initView();
+    }
+
+    private void initContextMenu() {
         launchShell.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 final int selectedIndex = tableView.getSelectionModel().getSelectedIndex();
@@ -74,104 +127,118 @@ public class Controller {
 
             }
         });
-    }
-
-    private void showRegionsMenu() {
-        regionMenu.getItems().addAll(RegionUtils.getRegions());
-        regionMenu.getSelectionModel().select(defaultRegion);
-    }
-
-    private void showEc2s() {
-        Region region = (Region) regionMenu.getSelectionModel().getSelectedItem();
-        AmazonEC2 amazonEC2Client = new AmazonEC2Client(awsCredentials);
-        AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
-
-        amazonEC2Client.setRegion(region);
-        cloudWatchClient.setEndpoint(region.getServiceEndpoint(ServiceAbbreviations.CloudWatch));
-
-        String firstColumnKey = "Name";
-
-        columns.removeAll(columns);
-        rows.removeAll(rows);
-
-
-        columns.add(firstColumnKey);
-        columns.add("Instance ID");
-        columns.add("Instance Load");
-        columns.add("Security Group");
-        columns.add("Instance Type");
-        columns.add("Instance State");
-        columns.add("Public DNS Name");
-        columns.add("Public IP");
-        columns.add("Private IP");
-        columns.add("Key Name");
-
-
-        boolean hasFirstColumnKey = false;
-        int maxTagsCount = 0;
-        reservations:
-        {
-            for (Reservation reservation :
-                    amazonEC2Client.describeInstances(new DescribeInstancesRequest()).getReservations()) {
-                for (Instance instance : reservation.getInstances()) {
-
-
-                    ObservableList<StringProperty> row = FXCollections.observableArrayList();
-                    row.add(new SimpleStringProperty(""));
-                    row.add(new SimpleStringProperty(instance.getInstanceId()));
-                    String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
-
-                    row.add(new SimpleStringProperty(instanceLoad));
-                    row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
-                    row.add(new SimpleStringProperty(instance.getInstanceType()));
-                    row.add(new SimpleStringProperty(instance.getState().getName()));
-                    row.add(new SimpleStringProperty(instance.getPublicDnsName()));
-                    row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
-                    row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
-                    row.add(new SimpleStringProperty(instance.getKeyName()));
-
-                    maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
-                    for (int i = 0; i < maxTagsCount; i++) {
-                        row.add(new SimpleStringProperty(""));
-                    }
-                    for (Tag tag : instance.getTags()) {
-                        if (tag.getKey().equals(firstColumnKey)) {
-                            row.set(0, new SimpleStringProperty(tag.getValue()));
-                            hasFirstColumnKey = true;
-                        } else {
-                            String columnHeader = "Tag::" + tag.getKey();
-                            if (!columns.contains(columnHeader))
-                                columns.add(columnHeader);
-                            row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getValue()));
-                        }
-                    }
-
-                    rows.add(row);
-                }
-            }
-        }
-
-        if (!hasFirstColumnKey) {
-            columns.remove(0);
-            for (ObservableList row : rows) {
-                row.remove(0);
-            }
-        }
-
-
-        tableView.getItems().clear();
-        tableView.getColumns().clear();
-
-        for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
-            tableView.getColumns().addAll(createColumn(columnIndex, columns.get(columnIndex)));
-        }
-
-        tableView.getItems().addAll(rows);
-        tableView.setColumnResizePolicy(new Callback<TableView.ResizeFeatures, Boolean>() {
-            public Boolean call(TableView.ResizeFeatures p) {
-                return true;
+        refreshTable.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                initEc2View();
             }
         });
+    }
+
+    private void initRegionsMenu() {
+        regionMenu.getItems().addAll(RegionUtils.getRegions());
+        regionMenu.getSelectionModel().select(defaultRegion);
+        regionMenu.setVisible(true);
+    }
+
+    private void initEc2View() {
+        try {
+            Region region = (Region) regionMenu.getSelectionModel().getSelectedItem();
+            AmazonEC2 amazonEC2Client = new AmazonEC2Client(awsCredentials);
+            AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
+
+            amazonEC2Client.setRegion(region);
+            cloudWatchClient.setEndpoint(region.getServiceEndpoint(ServiceAbbreviations.CloudWatch));
+
+            String firstColumnKey = "Name";
+
+            columns.removeAll(columns);
+            rows.removeAll(rows);
+
+
+            columns.add(firstColumnKey);
+            columns.add("Instance ID");
+            if (userPreferences.getBoolean("view.column.load", false)) {
+                columns.add("Instance Load");
+            }
+            columns.add("Security Group");
+            columns.add("Instance Type");
+            columns.add("Instance State");
+            columns.add("Public DNS Name");
+            columns.add("Public IP");
+            columns.add("Private IP");
+            columns.add("Key Name");
+
+
+            boolean hasFirstColumnKey = false;
+            int maxTagsCount = 0;
+            reservations:
+            {
+                for (Reservation reservation :
+                        amazonEC2Client.describeInstances(new DescribeInstancesRequest()).getReservations()) {
+                    for (Instance instance : reservation.getInstances()) {
+
+
+                        ObservableList<StringProperty> row = FXCollections.observableArrayList();
+                        row.add(new SimpleStringProperty(""));
+                        row.add(new SimpleStringProperty(instance.getInstanceId()));
+                        String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
+                        if (userPreferences.getBoolean("view.column.load", false)) {
+                            row.add(new SimpleStringProperty(instanceLoad));
+                        }
+                        row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
+                        row.add(new SimpleStringProperty(instance.getInstanceType()));
+                        row.add(new SimpleStringProperty(instance.getState().getName()));
+                        row.add(new SimpleStringProperty(instance.getPublicDnsName()));
+                        row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
+                        row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
+                        row.add(new SimpleStringProperty(instance.getKeyName()));
+
+                        maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
+                        for (int i = 0; i < maxTagsCount; i++) {
+                            row.add(new SimpleStringProperty(""));
+                        }
+                        for (Tag tag : instance.getTags()) {
+                            if (tag.getKey().equals(firstColumnKey)) {
+                                row.set(0, new SimpleStringProperty(tag.getValue()));
+                                hasFirstColumnKey = true;
+                            } else {
+                                String columnHeader = "Tag::" + tag.getKey();
+                                if (!columns.contains(columnHeader))
+                                    columns.add(columnHeader);
+                                row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getValue()));
+                            }
+                        }
+
+                        rows.add(row);
+                    }
+                }
+            }
+
+            if (!hasFirstColumnKey) {
+                columns.remove(0);
+                for (ObservableList row : rows) {
+                    row.remove(0);
+                }
+            }
+
+
+            tableView.getItems().clear();
+            tableView.getColumns().clear();
+
+            for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
+                tableView.getColumns().addAll(createColumn(columnIndex, columns.get(columnIndex)));
+            }
+
+            tableView.getItems().addAll(rows);
+            tableView.setColumnResizePolicy(new Callback<TableView.ResizeFeatures, Boolean>() {
+                public Boolean call(TableView.ResizeFeatures p) {
+                    return true;
+                }
+            });
+            tableView.setVisible(true);
+        } catch (Exception e) {
+            error(e.getMessage(), e.getStackTrace().toString());
+        }
 
     }
 
@@ -199,7 +266,7 @@ public class Controller {
         return column;
     }
 
-    public static double monitorInstance(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
+    private double monitorInstance(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
         try {
 
             long offsetInMilliseconds = 1000 * 60 * 60 * 24;
@@ -229,7 +296,7 @@ public class Controller {
         return 0;
     }
 
-    private static Alert alert(Alert.AlertType alertType, String title, String header, String text) {
+    private Alert alert(Alert.AlertType alertType, String title, String header, String text) {
         final Alert alert = new Alert(alertType);
         alert.setTitle(title);
         alert.setHeaderText(header);
@@ -238,8 +305,25 @@ public class Controller {
         return alert;
     }
 
-    private static Alert error(String message, String text) {
+    private Alert error(String message, String text) {
         return alert(Alert.AlertType.ERROR, "Error!", message, text);
+    }
+
+    @FXML
+    private void exit() {
+        Platform.exit();
+        System.exit(0);
+    }
+
+    @FXML
+    private void about() {
+        try {
+            Desktop.getDesktop().browse(new URI("https://github.com/gadelkareem/aws-client"));
+        } catch (Exception e) {
+            error(e.getMessage(), e.getStackTrace().toString());
+
+        }
+
     }
 }
 
