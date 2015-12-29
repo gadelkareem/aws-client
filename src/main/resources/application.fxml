@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import javafx.geometry.*?>
-<?import javafx.scene.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.Cursor?>
 <?import javafx.scene.layout.*?>
-
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.gadelkareem.awsclient.application.Controller">
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.gadelkareem.awsclient.application.Controller">
     <children>
         <VBox AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
@@ -16,32 +12,41 @@
                     <menus>
                         <Menu mnemonicParsing="false" text="File">
                             <items>
-                                <MenuItem mnemonicParsing="false" text="Close" />
+                                <MenuItem mnemonicParsing="false" text="Close"/>
                             </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text="Help">
                             <items>
-                                <MenuItem mnemonicParsing="false" text="About" />
+                                <MenuItem mnemonicParsing="false" text="About"/>
                             </items>
                         </Menu>
                     </menus>
                     <VBox.margin>
-                        <Insets />
+                        <Insets/>
                     </VBox.margin>
                 </MenuBar>
                 <HBox alignment="TOP_RIGHT">
                     <children>
-                        <ChoiceBox fx:id="regionMenu" prefWidth="150.0" />
+                        <ChoiceBox fx:id="regionMenu" prefWidth="150.0"/>
                     </children>
                 </HBox>
             </children>
         </VBox>
-        <TableView fx:id="tableView" layoutY="58.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="55.0">
+        <TableView fx:id="tableView" layoutY="58.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                   AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="55.0">
             <columns>
             </columns>
             <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
             </columnResizePolicy>
+            <contextMenu>
+                <ContextMenu>
+                    <items>
+                        <MenuItem fx:id="launchShell" mnemonicParsing="false" text="Open Shell"/>
+                        <MenuItem fx:id="info" mnemonicParsing="false" text="Display Info" disable="true"/>
+                    </items>
+                </ContextMenu>
+            </contextMenu>
         </TableView>
     </children>
 </AnchorPane>

@@ -24,12 +24,14 @@ import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.util.Callback;
 
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -40,9 +42,13 @@ public class Controller {
 
     public TableView tableView;
     public ChoiceBox regionMenu;
+    public MenuItem launchShell;
 
     private Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
     private AWSCredentials awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+
+    private List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
+    private List<String> columns = new ArrayList<String>();
 
 
     //INITIALIZE
@@ -50,6 +56,25 @@ public class Controller {
     void initialize() {
         showRegionsMenu();
         showEc2s();
+        launchShell.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                final int selectedIndex = tableView.getSelectionModel().getSelectedIndex();
+                final ObservableList<StringProperty> selectedRow = rows.get(selectedIndex);
+                final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
+                try {
+                    Process process = Runtime.getRuntime().exec("/usr/bin/open -a /Applications/Utilities/Terminal.app /bin/bash");
+                    int launched = process.waitFor();
+                    BufferedWriter terminal = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+                    System.out.println(launched);
+                    terminal.write("/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i ~/.aws/.ec2/dublin.pem ubuntu@" + selectedRow.get(publicDnsNameIndex).getValue() + "\n");
+                    //alert("",process.getErrorStream().toString(),"");
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
     private void showRegionsMenu() {
@@ -61,13 +86,15 @@ public class Controller {
         Region region = (Region) regionMenu.getSelectionModel().getSelectedItem();
         AmazonEC2 amazonEC2Client = new AmazonEC2Client(awsCredentials);
         AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
+
         amazonEC2Client.setRegion(region);
         cloudWatchClient.setEndpoint(region.getServiceEndpoint(ServiceAbbreviations.CloudWatch));
 
-        List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
-        List<String> columns = new ArrayList<String>();
-
         String firstColumnKey = "Name";
+
+        columns.removeAll(columns);
+        rows.removeAll(rows);
+
 
         columns.add(firstColumnKey);
         columns.add("Instance ID");
@@ -75,6 +102,7 @@ public class Controller {
         columns.add("Security Group");
         columns.add("Instance Type");
         columns.add("Instance State");
+        columns.add("Public DNS Name");
         columns.add("Public IP");
         columns.add("Private IP");
         columns.add("Key Name");
@@ -98,6 +126,7 @@ public class Controller {
                     row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
                     row.add(new SimpleStringProperty(instance.getInstanceType()));
                     row.add(new SimpleStringProperty(instance.getState().getName()));
+                    row.add(new SimpleStringProperty(instance.getPublicDnsName()));
                     row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
                     row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
                     row.add(new SimpleStringProperty(instance.getKeyName()));
@@ -119,7 +148,6 @@ public class Controller {
                     }
 
                     rows.add(row);
-//                    break reservations;
                 }
             }
         }
@@ -206,6 +234,15 @@ public class Controller {
 
         }
         return 0;
+    }
+
+    private static Alert alert(String title, String header, String text) {
+        final Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(text);
+        alert.showAndWait();
+        return alert;
     }
 }
 
