@@ -181,8 +181,8 @@ public class Controller {
                         ObservableList<StringProperty> row = FXCollections.observableArrayList();
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
-                        String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
+                            String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
                             row.add(new SimpleStringProperty(instanceLoad));
                         }
                         row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
