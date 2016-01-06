@@ -3,6 +3,7 @@ Desktop AWS java client
 
 @Under development..
 
+Check [Releases](https://github.com/gadelkareem/aws-client/releases) for executables.
 
 
 TODO:
