@@ -116,8 +116,7 @@ public class Controller {
     private void initContextMenu() {
         launchShell.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                final int selectedIndex = tableView.getSelectionModel().getSelectedIndex();
-                final ObservableList<StringProperty> selectedRow = rows.get(selectedIndex);
+                final ObservableList<StringProperty> selectedRow = ((ObservableList<StringProperty>) tableView.getSelectionModel().getSelectedItem());
                 final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
                 final int keyNameIndex = columns.indexOf("Key Name");
                 try {
