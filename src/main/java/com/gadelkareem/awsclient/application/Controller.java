@@ -197,7 +197,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
-                            String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId().toString()));
+                            String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId()));
                             row.add(new SimpleStringProperty(instanceLoad));
                         }
                         row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
@@ -214,7 +214,7 @@ public class Controller {
                             row.add(new SimpleStringProperty(""));
                         }
                         for (Tag tag : instance.getTags()) {
-                            if (tag.getKey().equals(firstColumnKey)) {
+                            if (tag.getKey().equals(firstColumnKey) && !tag.getValue().isEmpty()) {
                                 row.set(0, new SimpleStringProperty(tag.getValue()));
                                 hasFirstColumnKey = true;
                             } else {
