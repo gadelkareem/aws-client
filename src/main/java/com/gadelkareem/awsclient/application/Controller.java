@@ -33,9 +33,11 @@ import javafx.scene.control.*;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.stage.DirectoryChooser;
 import javafx.util.Callback;
 
 import java.awt.*;
+import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,9 +58,11 @@ public class Controller {
     public TextField preferencesAccessKey;
     public TextField preferencesSecretKey;
     public CheckBox preferencesDisplayLoad;
+    public TextField preferencesKeysPath;
+    public TextField preferencesEc2User;
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
-    private Region defaultRegion = Region.getRegion(Regions.EU_WEST_1);
+    private String defaultRegion = Regions.EU_WEST_1.getName();
     private AWSCredentials awsCredentials;
 
     private List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
@@ -84,15 +88,16 @@ public class Controller {
     }
 
     private boolean hasPreferences() {
-        return !(userPreferences.get("aws.access_key", "").isEmpty() && userPreferences.get("aws.secret_key", "").isEmpty());//!(awsCredentials.getAWSAccessKeyId().isEmpty() && awsCredentials.getAWSSecretKey().isEmpty());
+        return !(userPreferences.get("aws.access_key", "").isEmpty() && userPreferences.get("aws.secret_key", "").isEmpty());
     }
 
     @FXML
     private void initPreferences() {
         tableView.setVisible(false);
-        regionMenu.setVisible(false);
         preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
         preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
+        preferencesEc2User.setText(userPreferences.get("aws.ec2_username", "ec2-user"));
+        preferencesKeysPath.setText(userPreferences.get("aws.keys_path", getDefaultKeysPath()));
         preferencesDisplayLoad.selectedProperty().setValue(userPreferences.getBoolean("view.column.load", false));
         preferencesForm.setVisible(true);
     }
@@ -101,6 +106,8 @@ public class Controller {
     private void savePreferences() {
         userPreferences.put("aws.access_key", preferencesAccessKey.getText());
         userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
+        userPreferences.put("aws.ec2_username", preferencesEc2User.getText());
+        userPreferences.put("aws.keys_path", preferencesKeysPath.getText());
         userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
         preferencesForm.setVisible(false);
         initView();
@@ -112,17 +119,20 @@ public class Controller {
                 final int selectedIndex = tableView.getSelectionModel().getSelectedIndex();
                 final ObservableList<StringProperty> selectedRow = rows.get(selectedIndex);
                 final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
+                final int keyNameIndex = columns.indexOf("Key Name");
                 try {
                     final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
                             "-e", "tell app \"Terminal\"",
                             "-e", "set currentTab to do script " +
-                            "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i ~/.ssh/.ec2/dublin.pem ubuntu@" +
+                            "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i " +
+                            userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + selectedRow.get(keyNameIndex).getValue() + ".pem " +
+                            userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
                             selectedRow.get(publicDnsNameIndex).getValue() + "\")",
                             "-e", "end tell");
                     final Process process = processBuilder.start();
                     process.waitFor();
                 } catch (Exception e) {
-                    error(e.getMessage(), e.getStackTrace().toString());
+                    error(e.getMessage(), stackTraceToString(e));
                 }
 
             }
@@ -135,9 +145,13 @@ public class Controller {
     }
 
     private void initRegionsMenu() {
-        regionMenu.getItems().addAll(RegionUtils.getRegions());
-        regionMenu.getSelectionModel().select(defaultRegion);
-        regionMenu.setVisible(true);
+        try {
+            regionMenu.getItems().addAll(RegionUtils.getRegions());
+            regionMenu.getSelectionModel().select(Region.getRegion(Regions.fromName(userPreferences.get("aws.region", defaultRegion))));
+        } catch (Exception e) {
+            error(e.getMessage(), stackTraceToString(e));
+            userPreferences.put("aws.region", defaultRegion);
+        }
     }
 
     private void initEc2View() {
@@ -167,6 +181,7 @@ public class Controller {
             columns.add("Public IP");
             columns.add("Private IP");
             columns.add("Key Name");
+            columns.add("Instance Type");
 
 
             boolean hasFirstColumnKey = false;
@@ -192,6 +207,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
                         row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
                         row.add(new SimpleStringProperty(instance.getKeyName()));
+                        row.add(new SimpleStringProperty(instance.getInstanceType()));
 
                         maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
                         for (int i = 0; i < maxTagsCount; i++) {
@@ -237,7 +253,8 @@ public class Controller {
             });
             tableView.setVisible(true);
         } catch (Exception e) {
-            error(e.getMessage(), e.getStackTrace().toString());
+            error(e.getMessage(), stackTraceToString(e));
+            initPreferences();
         }
 
     }
@@ -320,10 +337,55 @@ public class Controller {
         try {
             Desktop.getDesktop().browse(new URI("https://github.com/gadelkareem/aws-client"));
         } catch (Exception e) {
-            error(e.getMessage(), e.getStackTrace().toString());
+            error(e.getMessage(), stackTraceToString(e));
 
         }
 
+    }
+
+
+    @FXML
+    private void directoryChooser() {
+        try {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Choose Directory");
+            File defaultDirectory = new File(!preferencesKeysPath.getText().isEmpty() ? preferencesKeysPath.getText() : getDefaultKeysPath());
+            directoryChooser.setInitialDirectory(defaultDirectory);
+            File selectedDirectory = directoryChooser.showDialog(null);
+            if (selectedDirectory != null) {
+                preferencesKeysPath.setText(selectedDirectory.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            error(e.getMessage(), stackTraceToString(e));
+
+        }
+
+    }
+
+    private String getDefaultKeysPath() {
+        return System.getProperty("user.home") + File.separator + ".ssh";
+    }
+
+
+    @FXML
+    private void changeRegion() {
+        try {
+            userPreferences.put("aws.region", regionMenu.getValue().toString());
+            initEc2View();
+        } catch (Exception e) {
+            error(e.getMessage(), stackTraceToString(e));
+
+        }
+
+    }
+
+    private static String stackTraceToString(Exception e) {
+        String result = e.toString() + "\n";
+        StackTraceElement[] trace = e.getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+            result += trace[i].toString() + "\n";
+        }
+        return result;
     }
 }
 
