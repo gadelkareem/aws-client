@@ -54,3 +54,5 @@ fabric.properties
 # Mac
 .DS_Store
 
+javapacker
+compiled
