@@ -73,7 +73,12 @@ public class Controller {
     @FXML
     void initialize() {
         if (!hasPreferences()) {
-            awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+            try {
+                awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
+            } catch (Exception e) {
+                awsCredentials = new BasicAWSCredentials("", "");
+            }
+
             initPreferences();
             return;
         }
@@ -93,33 +98,42 @@ public class Controller {
 
     @FXML
     private void initPreferences() {
-        tableView.setVisible(false);
-        preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
-        preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
-        preferencesEc2User.setText(userPreferences.get("aws.ec2_username", "ec2-user"));
-        preferencesKeysPath.setText(userPreferences.get("aws.keys_path", getDefaultKeysPath()));
-        preferencesDisplayLoad.selectedProperty().setValue(userPreferences.getBoolean("view.column.load", false));
-        preferencesForm.setVisible(true);
+        try {
+            tableView.setVisible(false);
+            preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
+            preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
+            preferencesEc2User.setText(userPreferences.get("aws.ec2_username", "ec2-user"));
+            preferencesKeysPath.setText(userPreferences.get("aws.keys_path", getDefaultKeysPath()));
+            preferencesDisplayLoad.selectedProperty().setValue(userPreferences.getBoolean("view.column.load", false));
+            preferencesForm.setVisible(true);
+        } catch (Exception e) {
+            error(e.getMessage(), stackTraceToString(e));
+        }
     }
 
     @FXML
     private void savePreferences() {
-        userPreferences.put("aws.access_key", preferencesAccessKey.getText());
-        userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
-        userPreferences.put("aws.ec2_username", preferencesEc2User.getText());
-        userPreferences.put("aws.keys_path", preferencesKeysPath.getText());
-        userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
-        preferencesForm.setVisible(false);
-        initView();
+        try {
+            userPreferences.put("aws.access_key", preferencesAccessKey.getText());
+            userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
+            userPreferences.put("aws.ec2_username", preferencesEc2User.getText());
+            userPreferences.put("aws.keys_path", preferencesKeysPath.getText());
+            userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
+            preferencesForm.setVisible(false);
+            initView();
+        } catch (Exception e) {
+            error(e.getMessage(), stackTraceToString(e));
+        }
     }
 
     private void initContextMenu() {
         launchShell.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
-                final ObservableList<StringProperty> selectedRow = ((ObservableList<StringProperty>) tableView.getSelectionModel().getSelectedItem());
-                final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
-                final int keyNameIndex = columns.indexOf("Key Name");
                 try {
+                    final ObservableList<StringProperty> selectedRow = ((ObservableList<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                    final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
+                    final int keyNameIndex = columns.indexOf("Key Name");
+
                     final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
                             "-e", "tell app \"Terminal\"",
                             "-e", "set currentTab to do script " +
