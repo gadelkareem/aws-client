@@ -213,7 +213,7 @@ public class Controller {
                             String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId()));
                             row.add(new SimpleStringProperty(instanceLoad));
                         }
-                        row.add(new SimpleStringProperty(instance.getSecurityGroups().get(0).getGroupName()));
+                        row.add(new SimpleStringProperty(!instance.getSecurityGroups().isEmpty() ? instance.getSecurityGroups().get(0).getGroupName() : ""));
                         row.add(new SimpleStringProperty(instance.getInstanceType()));
                         row.add(new SimpleStringProperty(instance.getState().getName()));
                         row.add(new SimpleStringProperty(instance.getPublicDnsName()));
