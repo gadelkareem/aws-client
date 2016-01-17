@@ -7,8 +7,11 @@ Check [Releases](https://github.com/gadelkareem/aws-client/releases) for executa
 
 
 TODO:
-- Create executables
-- More options on context menu
+- remove extra AWS sdk libs
+- Add Icons and descriptions
+- Fix regions menu
+- hide secret key on preferences
+- Add copy (Public IP, Private IP, DNS Name) options to context menu.
 - Allow open shell for other operating systems
 - Add RDS view
 - Add S3 view
