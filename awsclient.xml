@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="awsclient" default="all">
+  
+  
+  <property file="awsclient.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.swc"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.egg"/>
+    <include name="*.ane"/>
+    <include name="*.jar"/>
+    <include name="*.ear"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+  
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.1.8" value="${jdk.home.1.8}/bin"/>
+  <path id="jdk.classpath.1.8">
+    <fileset dir="${jdk.home.1.8}">
+      <include name="jre/lib/charsets.jar"/>
+      <include name="jre/lib/deploy.jar"/>
+      <include name="jre/lib/ext/cldrdata.jar"/>
+      <include name="jre/lib/ext/dnsns.jar"/>
+      <include name="jre/lib/ext/jaccess.jar"/>
+      <include name="jre/lib/ext/jfxrt.jar"/>
+      <include name="jre/lib/ext/localedata.jar"/>
+      <include name="jre/lib/ext/nashorn.jar"/>
+      <include name="jre/lib/ext/sunec.jar"/>
+      <include name="jre/lib/ext/sunjce_provider.jar"/>
+      <include name="jre/lib/ext/sunpkcs11.jar"/>
+      <include name="jre/lib/ext/zipfs.jar"/>
+      <include name="jre/lib/javaws.jar"/>
+      <include name="jre/lib/jce.jar"/>
+      <include name="jre/lib/jfr.jar"/>
+      <include name="jre/lib/jfxswt.jar"/>
+      <include name="jre/lib/jsse.jar"/>
+      <include name="jre/lib/management-agent.jar"/>
+      <include name="jre/lib/plugin.jar"/>
+      <include name="jre/lib/resources.jar"/>
+      <include name="jre/lib/rt.jar"/>
+      <include name="lib/ant-javafx.jar"/>
+      <include name="lib/dt.jar"/>
+      <include name="lib/javafx-mx.jar"/>
+      <include name="lib/jconsole.jar"/>
+      <include name="lib/packager.jar"/>
+      <include name="lib/sa-jdi.jar"/>
+      <include name="lib/tools.jar"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.1.8}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.1.8}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.1.8"/>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-cloudwatch/1.10.37/aws-java-sdk-cloudwatch-1.10.37.jar"/>
+  </path>
+  
+  <path id="library.maven:_com.amazonaws:aws-java-sdk-core:1.10.37.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-core/1.10.37/aws-java-sdk-core-1.10.37.jar"/>
+  </path>
+  
+  <path id="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-ec2/1.10.37/aws-java-sdk-ec2-1.10.37.jar"/>
+  </path>
+  
+  <path id="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.5.0.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-annotations/2.5.0/jackson-annotations-2.5.0.jar"/>
+  </path>
+  
+  <path id="library.maven:_com.fasterxml.jackson.core:jackson-core:2.5.3.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-core/2.5.3/jackson-core-2.5.3.jar"/>
+  </path>
+  
+  <path id="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.5.3.classpath">
+    <pathelement location="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-databind/2.5.3/jackson-databind-2.5.3.jar"/>
+  </path>
+  
+  <path id="library.maven:_commons-codec:commons-codec:1.6.classpath">
+    <pathelement location="${path.variable.maven_repository}/commons-codec/commons-codec/1.6/commons-codec-1.6.jar"/>
+  </path>
+  
+  <path id="library.maven:_commons-logging:commons-logging:1.1.3.classpath">
+    <pathelement location="${path.variable.maven_repository}/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar"/>
+  </path>
+  
+  <path id="library.maven:_joda-time:joda-time:2.8.1.classpath">
+    <pathelement location="${path.variable.maven_repository}/joda-time/joda-time/2.8.1/joda-time-2.8.1.jar"/>
+  </path>
+  
+  <path id="library.maven:_org.apache.httpcomponents:httpclient:4.3.6.classpath">
+    <pathelement location="${path.variable.maven_repository}/org/apache/httpcomponents/httpclient/4.3.6/httpclient-4.3.6.jar"/>
+  </path>
+  
+  <path id="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath">
+    <pathelement location="${path.variable.maven_repository}/org/apache/httpcomponents/httpcore/4.3.3/httpcore-4.3.3.jar"/>
+  </path>
+  <!-- Register Custom Compiler Taskdefs -->
+  <property name="javac2.home" value="${idea.home}/lib"/>
+  <path id="javac2.classpath">
+    <pathelement location="${javac2.home}/javac2.jar"/>
+    <pathelement location="${javac2.home}/jdom.jar"/>
+    <pathelement location="${javac2.home}/asm-all.jar"/>
+    <pathelement location="${javac2.home}/jgoodies-forms.jar"/>
+  </path>
+  <target name="register.custom.compilers">
+    <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.classpath"/>
+    <taskdef name="instrumentIdeaExtensions" classname="com.intellij.ant.InstrumentIdeaExtensions" classpathref="javac2.classpath"/>
+  </target>
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module AwsClient -->
+  
+  <dirname property="module.awsclient.basedir" file="${ant.file}"/>
+  
+  
+  <property name="module.jdk.home.awsclient" value="${jdk.home.1.8}"/>
+  <property name="module.jdk.bin.awsclient" value="${jdk.bin.1.8}"/>
+  <property name="module.jdk.classpath.awsclient" value="jdk.classpath.1.8"/>
+  
+  <property name="compiler.args.awsclient" value="-encoding UTF-8 -source 8 -target 1.8 ${compiler.args}"/>
+  
+  <property name="awsclient.output.dir" value="${module.awsclient.basedir}/target/classes"/>
+  <property name="awsclient.testoutput.dir" value="${module.awsclient.basedir}/target/test-classes"/>
+  
+  <path id="awsclient.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="awsclient.module.production.classpath">
+    <path refid="${module.jdk.classpath.awsclient}"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-core:1.10.37.classpath"/>
+    <path refid="library.maven:_commons-logging:commons-logging:1.1.3.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpclient:4.3.6.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath"/>
+    <path refid="library.maven:_commons-codec:commons-codec:1.6.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.5.3.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.5.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.5.3.classpath"/>
+    <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
+  </path>
+  
+  <path id="awsclient.runtime.production.module.classpath">
+    <pathelement location="${awsclient.output.dir}"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-core:1.10.37.classpath"/>
+    <path refid="library.maven:_commons-logging:commons-logging:1.1.3.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpclient:4.3.6.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath"/>
+    <path refid="library.maven:_commons-codec:commons-codec:1.6.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.5.3.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.5.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.5.3.classpath"/>
+    <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
+  </path>
+  
+  <path id="awsclient.module.classpath">
+    <path refid="${module.jdk.classpath.awsclient}"/>
+    <pathelement location="${awsclient.output.dir}"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-core:1.10.37.classpath"/>
+    <path refid="library.maven:_commons-logging:commons-logging:1.1.3.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpclient:4.3.6.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath"/>
+    <path refid="library.maven:_commons-codec:commons-codec:1.6.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.5.3.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.5.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.5.3.classpath"/>
+    <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
+  </path>
+  
+  <path id="awsclient.runtime.module.classpath">
+    <pathelement location="${awsclient.testoutput.dir}"/>
+    <pathelement location="${awsclient.output.dir}"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-core:1.10.37.classpath"/>
+    <path refid="library.maven:_commons-logging:commons-logging:1.1.3.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpclient:4.3.6.classpath"/>
+    <path refid="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath"/>
+    <path refid="library.maven:_commons-codec:commons-codec:1.6.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-databind:2.5.3.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-annotations:2.5.0.classpath"/>
+    <path refid="library.maven:_com.fasterxml.jackson.core:jackson-core:2.5.3.classpath"/>
+    <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
+    <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.awsclient">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.awsclient">
+    <patternset refid="excluded.from.module.awsclient"/>
+  </patternset>
+  
+  <path id="awsclient.module.sourcepath">
+    <dirset dir="${module.awsclient.basedir}">
+      <include name="src/main/java"/>
+      <include name="src/main/resources"/>
+    </dirset>
+  </path>
+  
+  <path id="awsclient.module.test.sourcepath">
+    <dirset dir="${module.awsclient.basedir}">
+      <include name="src/test/java"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.awsclient" depends="compile.module.awsclient.production,compile.module.awsclient.tests" description="Compile module AwsClient"/>
+  
+  <target name="compile.module.awsclient.production" depends="register.custom.compilers" description="Compile module AwsClient; production classes">
+    <mkdir dir="${awsclient.output.dir}"/>
+    <javac2 destdir="${awsclient.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.awsclient}/javac">
+      <compilerarg line="${compiler.args.awsclient}"/>
+      <bootclasspath refid="awsclient.module.bootclasspath"/>
+      <classpath refid="awsclient.module.production.classpath"/>
+      <src refid="awsclient.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.awsclient"/>
+    </javac2>
+    
+    <copy todir="${awsclient.output.dir}">
+      <fileset dir="${module.awsclient.basedir}/src/main/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+      <fileset dir="${module.awsclient.basedir}/src/main/resources">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.awsclient.tests" depends="register.custom.compilers,compile.module.awsclient.production" description="compile module AwsClient; test classes" unless="skip.tests">
+    <mkdir dir="${awsclient.testoutput.dir}"/>
+    <javac2 destdir="${awsclient.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.awsclient}/javac">
+      <compilerarg line="${compiler.args.awsclient}"/>
+      <bootclasspath refid="awsclient.module.bootclasspath"/>
+      <classpath refid="awsclient.module.classpath"/>
+      <src refid="awsclient.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.awsclient"/>
+    </javac2>
+    
+    <copy todir="${awsclient.testoutput.dir}">
+      <fileset dir="${module.awsclient.basedir}/src/test/java">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.awsclient" description="cleanup module">
+    <delete dir="${awsclient.output.dir}"/>
+    <delete dir="${awsclient.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.awsclient, clean.artifact.awsclient" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.awsclient" description="build all modules"/>
+  
+  <target name="init.artifacts">
+    <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
+    <property name="artifact.output.awsclient" value="${basedir}/out"/>
+    <mkdir dir="${artifacts.temp.dir}"/>
+    <property name="artifact.temp.output.app" value="${artifacts.temp.dir}/app.jar"/>
+    <taskdef resource="com/sun/javafx/tools/ant/antlib.xml" uri="javafx:com.sun.javafx.tools.ant" classpath="${jdk.home.1.8}/lib/ant-javafx.jar"/>
+  </target>
+  
+  <target name="clean.artifact.awsclient" description="clean AwsClient artifact output">
+    <delete dir="${artifact.output.awsclient}"/>
+  </target>
+  
+  <target name="artifact.awsclient" depends="init.artifacts, compile.module.awsclient" description="Build &#39;AwsClient&#39; artifact" xmlns:fx="javafx:com.sun.javafx.tools.ant">
+    <mkdir dir="${artifact.output.awsclient}"/>
+    <copy todir="${artifact.temp.output.app}">
+      <fileset dir="${awsclient.output.dir}"/>
+    </copy>
+    <mkdir dir="${artifact.temp.output.app}/META-INF"/>
+    <copy file="${basedir}/META-INF/MANIFEST.MF" tofile="${artifact.temp.output.app}/META-INF/MANIFEST.MF"/>
+    <copy file="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-cloudwatch/1.10.37/aws-java-sdk-cloudwatch-1.10.37.jar" tofile="${artifact.temp.output.app}/aws-java-sdk-cloudwatch-1.10.37.jar"/>
+    <copy file="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-core/1.10.37/aws-java-sdk-core-1.10.37.jar" tofile="${artifact.temp.output.app}/aws-java-sdk-core-1.10.37.jar"/>
+    <copy file="${path.variable.maven_repository}/com/amazonaws/aws-java-sdk-ec2/1.10.37/aws-java-sdk-ec2-1.10.37.jar" tofile="${artifact.temp.output.app}/aws-java-sdk-ec2-1.10.37.jar"/>
+    <copy file="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-annotations/2.5.0/jackson-annotations-2.5.0.jar" tofile="${artifact.temp.output.app}/jackson-annotations-2.5.0.jar"/>
+    <copy file="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-core/2.5.3/jackson-core-2.5.3.jar" tofile="${artifact.temp.output.app}/jackson-core-2.5.3.jar"/>
+    <copy file="${path.variable.maven_repository}/com/fasterxml/jackson/core/jackson-databind/2.5.3/jackson-databind-2.5.3.jar" tofile="${artifact.temp.output.app}/jackson-databind-2.5.3.jar"/>
+    <copy file="${path.variable.maven_repository}/commons-codec/commons-codec/1.6/commons-codec-1.6.jar" tofile="${artifact.temp.output.app}/commons-codec-1.6.jar"/>
+    <copy file="${path.variable.maven_repository}/commons-logging/commons-logging/1.1.3/commons-logging-1.1.3.jar" tofile="${artifact.temp.output.app}/commons-logging-1.1.3.jar"/>
+    <copy file="${path.variable.maven_repository}/joda-time/joda-time/2.8.1/joda-time-2.8.1.jar" tofile="${artifact.temp.output.app}/joda-time-2.8.1.jar"/>
+    <copy file="${path.variable.maven_repository}/org/apache/httpcomponents/httpclient/4.3.6/httpclient-4.3.6.jar" tofile="${artifact.temp.output.app}/httpclient-4.3.6.jar"/>
+    <copy file="${path.variable.maven_repository}/org/apache/httpcomponents/httpcore/4.3.3/httpcore-4.3.3.jar" tofile="${artifact.temp.output.app}/httpcore-4.3.3.jar"/>
+    <fx:fileset id="all_but_app" dir="${artifact.temp.output.app}" includes="**/*.jar">
+      <exclude name="app.jar"/>
+    </fx:fileset>
+    <fx:fileset id="all_app" dir="${artifact.temp.output.app}" includes="**/*.jar"/>
+    <fx:application id="app_id" name="AwsClient" mainClass="com.gadelkareem.awsclient.application.Main"/>
+    <fx:jar destfile="${artifact.temp.output.app}/app.jar">
+      <fx:application refid="app_id"/>
+      <fileset dir="${artifact.temp.output.app}" excludes="**/*.jar"/>
+      <fx:resources>
+        <fx:fileset refid="all_but_app"/>
+      </fx:resources>
+      <manifest>
+        <attribute name="verbose" value="true"/>
+      </manifest>
+    </fx:jar>
+    <fx:deploy width="600" height="400" updatemode="always" outdir="${artifact.temp.output.app}/deploy" outfile="app" nativeBundles="dmg" >
+      <fx:application refid="app_id"/>
+      <fx:info title="AWS Client" vendor="Gadelkareem.com"/>
+      <fx:resources>
+        <fx:fileset refid="all_app" />
+      </fx:resources>
+    </fx:deploy>
+    <copy todir="${artifact.output.awsclient}">
+      <fileset dir="${artifact.temp.output.app}/deploy"/>
+    </copy>
+    <delete includeemptydirs="true">
+      <fileset dir="${artifact.temp.output.app}"/>
+    </delete>
+  </target>
+  
+  <target name="build.all.artifacts" depends="artifact.awsclient" description="Build all artifacts">
+    
+    <!-- Delete temporary files -->
+    <delete dir="${artifacts.temp.dir}"/>
+  </target>
+  
+  <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
+</project>
