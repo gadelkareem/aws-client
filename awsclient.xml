@@ -364,11 +364,11 @@
         <attribute name="verbose" value="true"/>
       </manifest>
     </fx:jar>
-    <fx:deploy width="600" height="400" updatemode="always" outdir="${artifact.temp.output.app}/deploy" outfile="app" nativeBundles="dmg" >
+    <fx:deploy width="600" height="400" updatemode="always" outdir="${artifact.temp.output.app}/deploy" outfile="app" nativeBundles="all">
       <fx:application refid="app_id"/>
       <fx:info title="AWS Client" vendor="Gadelkareem.com"/>
       <fx:resources>
-        <fx:fileset refid="all_app" />
+        <fx:fileset refid="all_app"/>
       </fx:resources>
     </fx:deploy>
     <copy todir="${artifact.output.awsclient}">
