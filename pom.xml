@@ -6,7 +6,7 @@
 
     <groupId>application</groupId>
     <artifactId>AwsClient</artifactId>
-    <version>0.0.4-alpha</version>
+    <version>0.1.0-beta</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -22,7 +22,7 @@
                     <mainClass>com.gadelkareem.awsclient.application.Main</mainClass>
                     <identifier>awsclient</identifier>
                     <vendor>gadelkareem.com</vendor>
-                    <nativeReleaseVersion>0.0.4-alpha</nativeReleaseVersion>
+                    <nativeReleaseVersion>0.1.0-beta</nativeReleaseVersion>
                     <needShortcut>true</needShortcut>
                     <needMenu>true</needMenu>
                 </configuration>
@@ -49,11 +49,23 @@
 
     <dependencies>
 
+
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
+            <artifactId>aws-java-sdk-core</artifactId>
             <version>1.10.37</version>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-cloudwatch</artifactId>
+            <version>1.10.37</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-ec2</artifactId>
+            <version>1.10.37</version>
+        </dependency>
+
         <dependency>
             <groupId>com.oracle</groupId>
             <artifactId>javafx</artifactId>
