@@ -1,14 +1,14 @@
 # AWS Client
 Desktop AWS java client
 
-@Under development..
+Beta is now available.
 
-Check [Releases](https://github.com/gadelkareem/aws-client/releases) for executables.
+Check [Releases](https://github.com/gadelkareem/aws-client/releases) for downloads.
 
 
 TODO:
-- remove extra AWS sdk libs
-- Add Icons and descriptions
+- Sign OSX app
+- Add description and screenshots
 - Fix regions menu
 - hide secret key on preferences
 - Add copy (Public IP, Private IP, DNS Name) options to context menu.
