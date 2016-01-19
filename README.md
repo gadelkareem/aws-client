@@ -7,7 +7,6 @@ Check [Releases](https://github.com/gadelkareem/aws-client/releases) for downloa
 
 
 TODO:
-- hide secret key on preferences
 - Fix regions menu
 - Show number of EC2s on Regions menu
 - Add filtering
