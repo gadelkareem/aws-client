@@ -5,7 +5,6 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.regions.ServiceAbbreviations;
@@ -16,10 +15,7 @@ import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.Reservation;
-import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.ec2.model.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -49,7 +45,7 @@ public class Controller {
 
 
     public TableView tableView;
-    public ChoiceBox regionMenu;
+    public ChoiceBox<RegionChoice> regionMenu;
     public MenuItem launchShell;
     public MenuItem refreshTable;
 
@@ -64,10 +60,11 @@ public class Controller {
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
     private AWSCredentials awsCredentials;
+    private AmazonEC2 amazonEC2Client;
 
     private List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
     private List<String> columns = new ArrayList<String>();
-
+    private List<RegionChoice> regionChoices = new ArrayList<RegionChoice>();
 
     //INITIALIZE
     @FXML
@@ -87,6 +84,7 @@ public class Controller {
 
     private void initView() {
         awsCredentials = new BasicAWSCredentials(userPreferences.get("aws.access_key", ""), userPreferences.get("aws.secret_key", ""));
+        loadAmazonEC2Client();
         initRegionsMenu();
         initEc2View();
         initContextMenu();
@@ -113,12 +111,17 @@ public class Controller {
 
     @FXML
     private void savePreferences() {
+        if (preferencesAccessKey.getText().isEmpty() || preferencesSecretKey.getText().isEmpty() || preferencesEc2User.getText().isEmpty() || preferencesKeysPath.getText().isEmpty()) {
+            error("Missing Prefrences", "Please fill in all fields");
+            return;
+        }
         try {
             userPreferences.put("aws.access_key", preferencesAccessKey.getText());
             userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
             userPreferences.put("aws.ec2_username", preferencesEc2User.getText());
             userPreferences.put("aws.keys_path", preferencesKeysPath.getText());
             userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
+            regionChoices.clear();
             preferencesForm.setVisible(false);
             initView();
         } catch (Exception e) {
@@ -158,23 +161,43 @@ public class Controller {
     }
 
     private void initRegionsMenu() {
+        if (!regionChoices.isEmpty()) {
+            return;
+        }
         try {
-            regionMenu.getItems().addAll(RegionUtils.getRegions());
-            regionMenu.getSelectionModel().select(Region.getRegion(Regions.fromName(userPreferences.get("aws.region", defaultRegion))));
+            DescribeRegionsResult regionsResult = amazonEC2Client.describeRegions();
+            List<Region> regions = regionsResult.getRegions();
+            for (Region region : regions) {
+                com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(region.getRegionName());
+                if (generalRegion == null) {
+                    continue;
+                }
+                amazonEC2Client.setRegion(generalRegion);
+                List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
+                int numberOfInstances = 0;
+                if (!reservations.isEmpty()) {
+                    for (Reservation reservation : reservations) {
+                        numberOfInstances += reservation.getInstances().size();
+                    }
+                }
+                regionChoices.add(new RegionChoice(region, numberOfInstances));
+
+            }
+            regionMenu.getSelectionModel().clearSelection();
+            regionMenu.getItems().clear();
+            regionMenu.getItems().addAll(regionChoices);
+            regionMenu.getSelectionModel().select(getUserRegion());
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
-            userPreferences.put("aws.region", defaultRegion);
         }
     }
 
     private void initEc2View() {
         try {
-            Region region = (Region) regionMenu.getSelectionModel().getSelectedItem();
-            AmazonEC2 amazonEC2Client = new AmazonEC2Client(awsCredentials);
+            Region region = regionMenu.getSelectionModel().getSelectedItem().getRegion();
             AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
-
-            amazonEC2Client.setRegion(region);
-            cloudWatchClient.setEndpoint(region.getServiceEndpoint(ServiceAbbreviations.CloudWatch));
+            amazonEC2Client.setRegion(RegionUtils.getRegion(region.getRegionName()));
+            cloudWatchClient.setEndpoint(RegionUtils.getRegion(region.getRegionName()).getServiceEndpoint(ServiceAbbreviations.CloudWatch));
 
             String firstColumnKey = "Name";
 
@@ -383,7 +406,10 @@ public class Controller {
     @FXML
     private void changeRegion() {
         try {
-            userPreferences.put("aws.region", regionMenu.getValue().toString());
+            if (regionMenu.getValue() == null) {
+                return;
+            }
+            userPreferences.put("aws.region", regionMenu.getValue().getRegion().getRegionName());
             initEc2View();
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
@@ -399,6 +425,44 @@ public class Controller {
             result += trace[i].toString() + "\n";
         }
         return result;
+    }
+
+    private class RegionChoice {
+        private final Region region;
+        private final int numberOfInstances;
+
+        public RegionChoice(Region region, int numberOfInstances) {
+            this.region = region;
+            this.numberOfInstances = numberOfInstances;
+        }
+
+        public Region getRegion() {
+            return region;
+        }
+
+        public int getNumberOfInstances() {
+            return numberOfInstances;
+        }
+
+        public String toString() {
+            return region.getRegionName() + "  (" + numberOfInstances + ")";
+        }
+
+    }
+
+    private void loadAmazonEC2Client() {
+        this.amazonEC2Client = new AmazonEC2Client(awsCredentials);
+    }
+
+    private RegionChoice getUserRegion() {
+        String regionName = userPreferences.get("aws.region", defaultRegion);
+        for (RegionChoice regionChoice : regionChoices) {
+            if (regionChoice.getRegion().getRegionName().equals(regionName)) {
+                return regionChoice;
+            }
+        }
+        return regionChoices.get(0);
+
     }
 }
 
