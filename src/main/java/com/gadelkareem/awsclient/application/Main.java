@@ -16,12 +16,17 @@ public class Main extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
-        Parent root = FXMLLoader.load(getClass().getResource("/application.fxml"));
-        primaryStage.setTitle("AWS Client");
-        primaryStage.setScene(new Scene(root, primaryScreenBounds.getWidth() / 1.5, primaryScreenBounds.getHeight() / 1.5));
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/AwsClient.png")));
-        primaryStage.show();
+    public void start(Stage primaryStage) {
+        try {
+            Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
+            Parent root = FXMLLoader.load(getClass().getResource("/application.fxml"));
+            primaryStage.setTitle("AWS Client");
+            primaryStage.setScene(new Scene(root, primaryScreenBounds.getWidth() / 1.5, primaryScreenBounds.getHeight() / 1.5));
+            primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/AwsClient.png")));
+            primaryStage.show();
+        } catch (Exception e) {
+            System.err.println("Error loading AwsClient!");
+            e.printStackTrace();
+        }
     }
 }
