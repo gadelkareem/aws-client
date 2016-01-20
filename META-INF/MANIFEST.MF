@@ -1,3 +1,3 @@
-Manifest-Version: 0.2.0-beta
+Manifest-Version: 0.3.0-beta
 Main-Class: com.gadelkareem.awsclient.application.Main
 
