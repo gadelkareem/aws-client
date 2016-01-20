@@ -19,9 +19,10 @@ import com.amazonaws.services.ec2.model.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -30,7 +31,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
-import javafx.util.Callback;
 
 import java.awt.*;
 import java.io.File;
@@ -56,15 +56,16 @@ public class Controller {
     public CheckBox preferencesDisplayLoad;
     public TextField preferencesKeysPath;
     public TextField preferencesEc2User;
+    public TextField tableFilter;
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
     private AWSCredentials awsCredentials;
     private AmazonEC2 amazonEC2Client;
 
-    private List<ObservableList<StringProperty>> rows = new ArrayList<ObservableList<StringProperty>>();
-    private List<String> columns = new ArrayList<String>();
-    private List<RegionChoice> regionChoices = new ArrayList<RegionChoice>();
+    private SortedList<List<StringProperty>> sortedRows;
+    private List<String> columns = new ArrayList<>();
+    private List<RegionChoice> regionChoices = new ArrayList<>();
 
     //INITIALIZE
     @FXML
@@ -98,6 +99,7 @@ public class Controller {
     private void initPreferences() {
         try {
             tableView.setVisible(false);
+            tableFilter.setVisible(false);
             preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
             preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
             preferencesEc2User.setText(userPreferences.get("aws.ec2_username", "ec2-user"));
@@ -133,7 +135,7 @@ public class Controller {
         launchShell.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 try {
-                    final ObservableList<StringProperty> selectedRow = ((ObservableList<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                    final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
                     final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
                     final int keyNameIndex = columns.indexOf("Key Name");
 
@@ -199,11 +201,10 @@ public class Controller {
             amazonEC2Client.setRegion(RegionUtils.getRegion(region.getRegionName()));
             cloudWatchClient.setEndpoint(RegionUtils.getRegion(region.getRegionName()).getServiceEndpoint(ServiceAbbreviations.CloudWatch));
 
+            ObservableList<List<StringProperty>> rows = FXCollections.observableArrayList();
             String firstColumnKey = "Name";
 
-            columns.removeAll(columns);
-            rows.removeAll(rows);
-
+            columns.clear();
 
             columns.add(firstColumnKey);
             columns.add("Instance ID");
@@ -229,7 +230,7 @@ public class Controller {
                     for (Instance instance : reservation.getInstances()) {
 
 
-                        ObservableList<StringProperty> row = FXCollections.observableArrayList();
+                        List<StringProperty> row = new ArrayList<StringProperty>();
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
@@ -268,26 +269,42 @@ public class Controller {
 
             if (!hasFirstColumnKey) {
                 columns.remove(0);
-                for (ObservableList row : rows) {
+                for (List<StringProperty> row : rows) {
                     row.remove(0);
                 }
             }
 
 
-            tableView.getItems().clear();
             tableView.getColumns().clear();
 
             for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
-                tableView.getColumns().addAll(createColumn(columnIndex, columns.get(columnIndex)));
+                tableView.getColumns().add(createColumn(columnIndex, columns.get(columnIndex)));
             }
 
-            tableView.getItems().addAll(rows);
-            tableView.setColumnResizePolicy(new Callback<TableView.ResizeFeatures, Boolean>() {
-                public Boolean call(TableView.ResizeFeatures p) {
-                    return true;
-                }
+            FilteredList<List<StringProperty>> filteredRows = new FilteredList<>(rows, p -> true);
+            tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredRows.setPredicate(r -> {
+                    if (newValue == null || newValue.isEmpty()) {
+                        return true;
+                    }
+
+                    String lowerCaseFilter = newValue.toLowerCase();
+                    for (StringProperty cell : r) {
+                        if (cell.getValue().toLowerCase().contains(lowerCaseFilter)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
             });
+            sortedRows = new SortedList<>(filteredRows);
+            sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
+            tableView.setItems(sortedRows);
+
+            tableView.setColumnResizePolicy(p -> true);
             tableView.setVisible(true);
+            tableFilter.clear();
+            tableFilter.setVisible(true);
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
             initPreferences();
@@ -295,25 +312,21 @@ public class Controller {
 
     }
 
-    private TableColumn<ObservableList<StringProperty>, String> createColumn(
+    private TableColumn<List<StringProperty>, String> createColumn(
             final int columnIndex,
             String columnTitle
     ) {
 
-        TableColumn<ObservableList<StringProperty>, String> column = new TableColumn<ObservableList<StringProperty>, String>();
+        TableColumn<List<StringProperty>, String> column = new TableColumn<>();
         column.setText(columnTitle);
 
-        column.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<ObservableList<StringProperty>, String>, ObservableValue<String>>() {
-            public ObservableValue<String> call(
-                    TableColumn.CellDataFeatures<ObservableList<StringProperty>, String> cellDataFeatures) {
-                ObservableList<StringProperty> values = cellDataFeatures.getValue();
-                if (columnIndex >= values.size()) {
-                    return new SimpleStringProperty("");
-                } else {
-                    return cellDataFeatures.getValue().get(columnIndex);
-                }
+        column.setCellValueFactory(cellDataFeatures -> {
+            List<StringProperty> row = cellDataFeatures.getValue();
+            if (columnIndex >= row.size()) {
+                return new SimpleStringProperty("");
+            } else {
+                return row.get(columnIndex);
             }
-
 
         });
         return column;
@@ -464,6 +477,7 @@ public class Controller {
         return regionChoices.get(0);
 
     }
+
 }
 
 
