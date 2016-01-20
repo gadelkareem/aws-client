@@ -7,7 +7,7 @@ Check [Releases](https://github.com/gadelkareem/aws-client/releases) for downloa
 
 
 TODO:
-- Add filtering
+- 
 - Add copy (Public IP, Private IP, DNS Name) options to context menu.
 - Add options for ssh IP
 - Fix instance load
