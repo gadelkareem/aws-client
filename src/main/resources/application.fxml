@@ -29,7 +29,7 @@
                 </MenuBar>
                 <HBox alignment="TOP_RIGHT">
                     <children>
-                        <TextField fx:id="tableFilter" promptText="Filter" HBox.hgrow="ALWAYS" visible="false" >
+                        <TextField fx:id="tableFilter" promptText="Filter" HBox.hgrow="ALWAYS" visible="false">
                             <HBox.margin>
                                 <Insets right="10.0"/>
                             </HBox.margin>
@@ -111,6 +111,8 @@
                     <items>
                         <MenuItem fx:id="refreshTable" mnemonicParsing="false" text="Refresh"/>
                         <MenuItem fx:id="launchShell" mnemonicParsing="false" text="Open Shell"/>
+                        <MenuItem fx:id="copyCellValue" mnemonicParsing="false" text="Copy cell value"/>
+                        <MenuItem fx:id="filterUsingCellValue" mnemonicParsing="false" text="Filter using cell value"/>
                         <MenuItem fx:id="info" disable="true" mnemonicParsing="false" text="Display Info"/>
                     </items>
                 </ContextMenu>
