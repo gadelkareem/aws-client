@@ -23,12 +23,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.stage.DirectoryChooser;
 
@@ -57,6 +57,8 @@ public class Controller {
     public TextField preferencesKeysPath;
     public TextField preferencesEc2User;
     public TextField tableFilter;
+    public MenuItem copyCellValue;
+    public MenuItem filterUsingCellValue;
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
@@ -132,33 +134,47 @@ public class Controller {
     }
 
     private void initContextMenu() {
-        launchShell.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                try {
-                    final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
-                    final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
-                    final int keyNameIndex = columns.indexOf("Key Name");
+        launchShell.setOnAction(event -> {
+            try {
+                final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
+                final int keyNameIndex = columns.indexOf("Key Name");
 
-                    final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
-                            "-e", "tell app \"Terminal\"",
-                            "-e", "set currentTab to do script " +
-                            "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i " +
-                            userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + selectedRow.get(keyNameIndex).getValue() + ".pem " +
-                            userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
-                            selectedRow.get(publicDnsNameIndex).getValue() + "\")",
-                            "-e", "end tell");
-                    final Process process = processBuilder.start();
-                    process.waitFor();
-                } catch (Exception e) {
-                    error(e.getMessage(), stackTraceToString(e));
-                }
-
+                final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
+                        "-e", "tell app \"Terminal\"",
+                        "-e", "set currentTab to do script " +
+                        "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i " +
+                        userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + selectedRow.get(keyNameIndex).getValue() + ".pem " +
+                        userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
+                        selectedRow.get(publicDnsNameIndex).getValue() + "\")",
+                        "-e", "end tell");
+                final Process process = processBuilder.start();
+                process.waitFor();
+            } catch (Exception e) {
+                error(e.getMessage(), stackTraceToString(e));
             }
+
+
         });
-        refreshTable.setOnAction(new EventHandler<ActionEvent>() {
-            public void handle(ActionEvent event) {
-                initEc2View();
-            }
+        refreshTable.setOnAction(event -> {
+            initEc2View();
+        });
+        copyCellValue.setOnAction(event -> {
+            final ClipboardContent clipboardContent = new ClipboardContent();
+            ObservableList<TablePosition> positionList = tableView.getSelectionModel().getSelectedCells();
+            TablePosition position = positionList.get(0);
+            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            int row = position.getRow();
+
+            clipboardContent.putString(column.getCellData(row).toString());
+            Clipboard.getSystemClipboard().setContent(clipboardContent);
+        });
+        filterUsingCellValue.setOnAction(event -> {
+            ObservableList<TablePosition> positionList = tableView.getSelectionModel().getSelectedCells();
+            TablePosition position = positionList.get(0);
+            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            int row = position.getRow();
+            tableFilter.setText(column.getCellData(row).toString());
         });
     }
 
@@ -282,6 +298,7 @@ public class Controller {
             }
 
             FilteredList<List<StringProperty>> filteredRows = new FilteredList<>(rows, p -> true);
+
             tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
                 filteredRows.setPredicate(r -> {
                     if (newValue == null || newValue.isEmpty()) {
