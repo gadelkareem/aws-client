@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
+<?import com.sun.javafx.scene.control.skin.ContextMenuContent.ArrowMenuItem?>
 <AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.gadelkareem.awsclient.application.Controller">
     <children>
@@ -75,21 +76,27 @@
                     </font>
                 </Label>
                 <TextField fx:id="preferencesEc2User" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-                <Label alignment="BASELINE_LEFT" contentDisplay="CENTER" text="Private keys path" GridPane.rowIndex="3">
+                <Label alignment="BASELINE_LEFT" contentDisplay="CENTER" text="SSH options" GridPane.rowIndex="3">
                     <font>
                         <Font name="Verdana" size="14.0"/>
                     </font>
                 </Label>
-                <HBox GridPane.columnIndex="1" GridPane.rowIndex="3">
+                <TextField fx:id="preferencesSshOptions" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <Label alignment="BASELINE_LEFT" contentDisplay="CENTER" text="Private keys path" GridPane.rowIndex="4">
+                    <font>
+                        <Font name="Verdana" size="14.0"/>
+                    </font>
+                </Label>
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="4">
                     <children>
                         <TextField fx:id="preferencesKeysPath" text="" HBox.hgrow="ALWAYS"/>
                         <Button mnemonicParsing="false" onAction="#directoryChooser" text="..."/>
                     </children>
                 </HBox>
                 <CheckBox fx:id="preferencesDisplayLoad" mnemonicParsing="false" text="Display instance load column"
-                          GridPane.rowIndex="4"/>
+                          GridPane.rowIndex="5"/>
                 <Button defaultButton="true" mnemonicParsing="false" onAction="#savePreferences" text="Save Preferences"
-                        GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="5"
+                        GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="6"
                         GridPane.valignment="CENTER"/>
             </children>
             <opaqueInsets>
@@ -110,7 +117,11 @@
                 <ContextMenu>
                     <items>
                         <MenuItem fx:id="refreshTable" mnemonicParsing="false" text="Refresh"/>
-                        <MenuItem fx:id="launchShell" mnemonicParsing="false" text="Open Shell"/>
+                        <Menu fx:id="launchShell" mnemonicParsing="false" text="Open Shell using">
+                            <MenuItem text="Public DNS Name"/>
+                            <MenuItem text="Public IP"/>
+                            <MenuItem text="Private IP"/>
+                        </Menu>
                         <MenuItem fx:id="copyCellValue" mnemonicParsing="false" text="Copy cell value"/>
                         <MenuItem fx:id="filterUsingCellValue" mnemonicParsing="false" text="Filter using cell value"/>
                         <MenuItem fx:id="info" disable="true" mnemonicParsing="false" text="Display Info"/>
