@@ -250,6 +250,7 @@ public class Controller {
             columns.add("Private IP");
             columns.add("Key Name");
             columns.add("Instance Type");
+            columns.add("Launch Time");
 
 
             boolean hasFirstColumnKey = false;
@@ -276,6 +277,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
                         row.add(new SimpleStringProperty(instance.getKeyName()));
                         row.add(new SimpleStringProperty(instance.getInstanceType()));
+                        row.add(new SimpleStringProperty(instance.getLaunchTime().toString()));
 
                         maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
                         for (int i = 0; i < maxTagsCount; i++) {
