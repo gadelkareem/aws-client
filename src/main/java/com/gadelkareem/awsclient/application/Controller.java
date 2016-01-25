@@ -91,7 +91,6 @@ public class Controller {
         awsCredentials = new BasicAWSCredentials(userPreferences.get("aws.access_key", ""), userPreferences.get("aws.secret_key", ""));
         loadAmazonEC2Client();
         initRegionsMenu();
-        initEc2View();
         initContextMenu();
     }
 

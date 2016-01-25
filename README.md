@@ -7,7 +7,6 @@ Check [Releases](https://github.com/gadelkareem/aws-client/releases) for downloa
 
 
 TODO:
-- initEc2View is called 2 times
 - Clear table filter button
 - Allow open shell for other operating systems
 - Add clear filter option
