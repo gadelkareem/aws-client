@@ -266,7 +266,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
-                            String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId()));
+                            String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instance.getInstanceId()));
                             row.add(new SimpleStringProperty(instanceLoad));
                         }
                         row.add(new SimpleStringProperty(!instance.getSecurityGroups().isEmpty() ? instance.getSecurityGroups().get(0).getGroupName() : ""));
@@ -366,10 +366,10 @@ public class Controller {
         return column;
     }
 
-    private double monitorInstance(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
+    private double getInstanceAverageLoad(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
         try {
 
-            long offsetInMilliseconds = 1000 * 60 * 60 * 24;
+            long offsetInMilliseconds = 1000 * 60 * 60;
             GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
                     .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
                     .withNamespace("AWS/EC2")
