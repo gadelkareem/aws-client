@@ -65,7 +65,8 @@ public class Controller {
     public MenuItem filterUsingCellValue;
     public TextField preferencesSshOptions;
     public HBox filterPlaceholder;
-    CustomTextField tableFilter = (CustomTextField) TextFields.createClearableTextField();
+
+    private CustomTextField tableFilter;
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
@@ -79,6 +80,7 @@ public class Controller {
     //INITIALIZE
     @FXML
     void initialize() {
+        initTableFilter();
         if (!hasPreferences()) {
             try {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
@@ -93,8 +95,10 @@ public class Controller {
     }
 
     private void initTableFilter() {
+        tableFilter = (CustomTextField) TextFields.createClearableTextField();
         filterPlaceholder.getChildren().add(tableFilter);
         filterPlaceholder.setHgrow(tableFilter, Priority.ALWAYS);
+        tableFilter.setVisible(false);
     }
 
     private void initView() {
@@ -102,7 +106,6 @@ public class Controller {
         loadAmazonEC2Client();
         initRegionsMenu();
         initContextMenu();
-        initTableFilter();
     }
 
     private boolean hasPreferences() {
