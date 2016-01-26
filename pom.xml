@@ -65,7 +65,11 @@
             <artifactId>aws-java-sdk-ec2</artifactId>
             <version>1.10.37</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>8.40.10</version>
+        </dependency>
         <dependency>
             <groupId>com.oracle</groupId>
             <artifactId>javafx</artifactId>

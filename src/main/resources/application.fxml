@@ -30,14 +30,11 @@
                 </MenuBar>
                 <HBox alignment="TOP_RIGHT">
                     <children>
-                        <TextField fx:id="tableFilter" promptText="Filter" HBox.hgrow="ALWAYS" visible="false">
+                        <HBox fx:id="filterPlaceholder" HBox.hgrow="ALWAYS">
                             <HBox.margin>
                                 <Insets right="10.0"/>
                             </HBox.margin>
-                            <padding>
-                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
-                            </padding>
-                        </TextField>
+                        </HBox>
                         <ChoiceBox fx:id="regionMenu" onAction="#changeRegion" prefWidth="150.0"/>
                     </children>
                 </HBox>

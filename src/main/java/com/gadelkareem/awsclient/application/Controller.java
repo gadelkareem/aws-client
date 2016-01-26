@@ -31,7 +31,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.stage.DirectoryChooser;
+import org.controlsfx.control.textfield.CustomTextField;
+import org.controlsfx.control.textfield.TextFields;
 
 import java.awt.*;
 import java.io.File;
@@ -57,10 +61,11 @@ public class Controller {
     public CheckBox preferencesDisplayLoad;
     public TextField preferencesKeysPath;
     public TextField preferencesEc2User;
-    public TextField tableFilter;
     public MenuItem copyCellValue;
     public MenuItem filterUsingCellValue;
     public TextField preferencesSshOptions;
+    public HBox filterPlaceholder;
+    CustomTextField tableFilter = (CustomTextField) TextFields.createClearableTextField();
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
@@ -87,11 +92,17 @@ public class Controller {
         initView();
     }
 
+    private void initTableFilter() {
+        filterPlaceholder.getChildren().add(tableFilter);
+        filterPlaceholder.setHgrow(tableFilter, Priority.ALWAYS);
+    }
+
     private void initView() {
         awsCredentials = new BasicAWSCredentials(userPreferences.get("aws.access_key", ""), userPreferences.get("aws.secret_key", ""));
         loadAmazonEC2Client();
         initRegionsMenu();
         initContextMenu();
+        initTableFilter();
     }
 
     private boolean hasPreferences() {
