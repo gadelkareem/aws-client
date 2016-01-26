@@ -65,7 +65,8 @@ public class Controller {
     public MenuItem filterUsingCellValue;
     public TextField preferencesSshOptions;
     public HBox filterPlaceholder;
-    CustomTextField tableFilter = (CustomTextField) TextFields.createClearableTextField();
+
+    private CustomTextField tableFilter;
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
@@ -94,6 +95,7 @@ public class Controller {
     }
 
     private void initTableFilter() {
+        tableFilter = (CustomTextField) TextFields.createClearableTextField();
         filterPlaceholder.getChildren().add(tableFilter);
         filterPlaceholder.setHgrow(tableFilter, Priority.ALWAYS);
         tableFilter.setVisible(false);

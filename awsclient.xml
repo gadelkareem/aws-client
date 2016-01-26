@@ -141,6 +141,10 @@
   <path id="library.maven:_org.apache.httpcomponents:httpcore:4.3.3.classpath">
     <pathelement location="${path.variable.maven_repository}/org/apache/httpcomponents/httpcore/4.3.3/httpcore-4.3.3.jar"/>
   </path>
+  
+  <path id="library.maven:_org.controlsfx:controlsfx:8.40.10.classpath">
+    <pathelement location="${path.variable.maven_repository}/org/controlsfx/controlsfx/8.40.10/controlsfx-8.40.10.jar"/>
+  </path>
   <!-- Register Custom Compiler Taskdefs -->
   <property name="javac2.home" value="${idea.home}/lib"/>
   <path id="javac2.classpath">
@@ -188,6 +192,7 @@
     <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <path refid="library.maven:_org.controlsfx:controlsfx:8.40.10.classpath"/>
     <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
   </path>
   
@@ -204,6 +209,7 @@
     <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <path refid="library.maven:_org.controlsfx:controlsfx:8.40.10.classpath"/>
     <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
   </path>
   
@@ -221,6 +227,7 @@
     <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <path refid="library.maven:_org.controlsfx:controlsfx:8.40.10.classpath"/>
     <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
   </path>
   
@@ -238,6 +245,7 @@
     <path refid="library.maven:_joda-time:joda-time:2.8.1.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-cloudwatch:1.10.37.classpath"/>
     <path refid="library.maven:_com.amazonaws:aws-java-sdk-ec2:1.10.37.classpath"/>
+    <path refid="library.maven:_org.controlsfx:controlsfx:8.40.10.classpath"/>
     <pathelement location="${basedir}/../../../../../Library/Java/JavaVirtualMachines/jdk1.8.0_65.jdk/Contents/Home/jre/lib/ext/jfxrt.jar"/>
   </path>
   
@@ -360,8 +368,9 @@
       <fx:resources>
         <fx:fileset refid="all_but_app"/>
       </fx:resources>
+      <manifest/>
     </fx:jar>
-    <fx:deploy width="600" height="400" updatemode="always" outdir="${artifact.temp.output.app}/deploy" outfile="app" nativeBundles="all" >
+    <fx:deploy width="600" height="400" updatemode="always" outdir="${artifact.temp.output.app}/deploy" outfile="app" nativeBundles="all">
       <fx:application refid="app_id"/>
       <fx:info title="AWS Client" vendor="Gadelkareem.com"/>
       <fx:resources>
