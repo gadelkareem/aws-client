@@ -79,6 +79,7 @@ public class Controller {
     //INITIALIZE
     @FXML
     void initialize() {
+        initTableFilter();
         if (!hasPreferences()) {
             try {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
@@ -95,6 +96,7 @@ public class Controller {
     private void initTableFilter() {
         filterPlaceholder.getChildren().add(tableFilter);
         filterPlaceholder.setHgrow(tableFilter, Priority.ALWAYS);
+        tableFilter.setVisible(false);
     }
 
     private void initView() {
@@ -102,7 +104,6 @@ public class Controller {
         loadAmazonEC2Client();
         initRegionsMenu();
         initContextMenu();
-        initTableFilter();
     }
 
     private boolean hasPreferences() {
