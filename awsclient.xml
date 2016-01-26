@@ -357,6 +357,7 @@
     <copy file="${path.variable.maven_repository}/joda-time/joda-time/2.8.1/joda-time-2.8.1.jar" tofile="${artifact.temp.output.app}/joda-time-2.8.1.jar"/>
     <copy file="${path.variable.maven_repository}/org/apache/httpcomponents/httpclient/4.3.6/httpclient-4.3.6.jar" tofile="${artifact.temp.output.app}/httpclient-4.3.6.jar"/>
     <copy file="${path.variable.maven_repository}/org/apache/httpcomponents/httpcore/4.3.3/httpcore-4.3.3.jar" tofile="${artifact.temp.output.app}/httpcore-4.3.3.jar"/>
+    <copy file="${path.variable.maven_repository}/org/controlsfx/controlsfx/8.40.10/controlsfx-8.40.10.jar" tofile="${artifact.temp.output.app}/controlsfx-8.40.10.jar"/>
     <fx:fileset id="all_but_app" dir="${artifact.temp.output.app}" includes="**/*.jar">
       <exclude name="app.jar"/>
     </fx:fileset>
