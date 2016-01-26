@@ -25,12 +25,17 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.stage.DirectoryChooser;
+import org.controlsfx.control.textfield.CustomTextField;
+import org.controlsfx.control.textfield.TextFields;
 
 import java.awt.*;
 import java.io.File;
@@ -46,7 +51,7 @@ public class Controller {
 
     public TableView tableView;
     public ChoiceBox<RegionChoice> regionMenu;
-    public MenuItem launchShell;
+    public Menu launchShell;
     public MenuItem refreshTable;
 
     //Preferences form
@@ -56,9 +61,11 @@ public class Controller {
     public CheckBox preferencesDisplayLoad;
     public TextField preferencesKeysPath;
     public TextField preferencesEc2User;
-    public TextField tableFilter;
     public MenuItem copyCellValue;
     public MenuItem filterUsingCellValue;
+    public TextField preferencesSshOptions;
+    public HBox filterPlaceholder;
+    CustomTextField tableFilter = (CustomTextField) TextFields.createClearableTextField();
 
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
@@ -85,12 +92,17 @@ public class Controller {
         initView();
     }
 
+    private void initTableFilter() {
+        filterPlaceholder.getChildren().add(tableFilter);
+        filterPlaceholder.setHgrow(tableFilter, Priority.ALWAYS);
+    }
+
     private void initView() {
         awsCredentials = new BasicAWSCredentials(userPreferences.get("aws.access_key", ""), userPreferences.get("aws.secret_key", ""));
         loadAmazonEC2Client();
         initRegionsMenu();
-        initEc2View();
         initContextMenu();
+        initTableFilter();
     }
 
     private boolean hasPreferences() {
@@ -105,6 +117,7 @@ public class Controller {
             preferencesAccessKey.setText(userPreferences.get("aws.access_key", awsCredentials.getAWSAccessKeyId()));
             preferencesSecretKey.setText(userPreferences.get("aws.secret_key", awsCredentials.getAWSSecretKey()));
             preferencesEc2User.setText(userPreferences.get("aws.ec2_username", "ec2-user"));
+            preferencesSshOptions.setText(userPreferences.get("aws.ssh_options", "-o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100"));
             preferencesKeysPath.setText(userPreferences.get("aws.keys_path", getDefaultKeysPath()));
             preferencesDisplayLoad.selectedProperty().setValue(userPreferences.getBoolean("view.column.load", false));
             preferencesForm.setVisible(true);
@@ -123,6 +136,7 @@ public class Controller {
             userPreferences.put("aws.access_key", preferencesAccessKey.getText());
             userPreferences.put("aws.secret_key", preferencesSecretKey.getText());
             userPreferences.put("aws.ec2_username", preferencesEc2User.getText());
+            userPreferences.put("aws.ssh_options", preferencesSshOptions.getText());
             userPreferences.put("aws.keys_path", preferencesKeysPath.getText());
             userPreferences.putBoolean("view.column.load", preferencesDisplayLoad.isSelected());
             regionChoices.clear();
@@ -137,16 +151,27 @@ public class Controller {
         launchShell.setOnAction(event -> {
             try {
                 final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
-                final int publicDnsNameIndex = columns.indexOf("Public DNS Name");
                 final int keyNameIndex = columns.indexOf("Key Name");
+                final MenuItem source = (MenuItem) event.getTarget();
+                String ip = "";
 
+                if (source.getText().equals("Public DNS Name")) {
+                    ip = selectedRow.get(columns.indexOf("Public DNS Name")).getValue();
+                } else if (source.getText().equals("Public IP")) {
+                    ip = selectedRow.get(columns.indexOf("Public IP")).getValue();
+                } else if (source.getText().equals("Private IP")) {
+                    ip = selectedRow.get(columns.indexOf("Private IP")).getValue();
+                }
+                if (ip.isEmpty()) {
+                    return;
+                }
                 final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
                         "-e", "tell app \"Terminal\"",
                         "-e", "set currentTab to do script " +
-                        "(\"/usr/bin/ssh -o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100 -i " +
+                        "(\"/usr/bin/ssh " + userPreferences.get("aws.ssh_options", "ec2-user") + " -i " +
                         userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + selectedRow.get(keyNameIndex).getValue() + ".pem " +
                         userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
-                        selectedRow.get(publicDnsNameIndex).getValue() + "\")",
+                        ip + "\")",
                         "-e", "end tell");
                 final Process process = processBuilder.start();
                 process.waitFor();
@@ -235,6 +260,7 @@ public class Controller {
             columns.add("Private IP");
             columns.add("Key Name");
             columns.add("Instance Type");
+            columns.add("Launch Time");
 
 
             boolean hasFirstColumnKey = false;
@@ -250,7 +276,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
-                            String instanceLoad = Double.toString(monitorInstance(cloudWatchClient, instance.getInstanceId()));
+                            String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instance.getInstanceId()));
                             row.add(new SimpleStringProperty(instanceLoad));
                         }
                         row.add(new SimpleStringProperty(!instance.getSecurityGroups().isEmpty() ? instance.getSecurityGroups().get(0).getGroupName() : ""));
@@ -261,6 +287,7 @@ public class Controller {
                         row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
                         row.add(new SimpleStringProperty(instance.getKeyName()));
                         row.add(new SimpleStringProperty(instance.getInstanceType()));
+                        row.add(new SimpleStringProperty(instance.getLaunchTime().toString()));
 
                         maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
                         for (int i = 0; i < maxTagsCount; i++) {
@@ -349,10 +376,10 @@ public class Controller {
         return column;
     }
 
-    private double monitorInstance(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
+    private double getInstanceAverageLoad(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
         try {
 
-            long offsetInMilliseconds = 1000 * 60 * 60 * 24;
+            long offsetInMilliseconds = 1000 * 60 * 60;
             GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
                     .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
                     .withNamespace("AWS/EC2")
