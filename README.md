@@ -7,7 +7,6 @@ Check [Releases](https://github.com/gadelkareem/aws-client/releases) for downloa
 
 
 TODO:
-- Allow open shell for other operating systems
 - Add description and screenshots
 - Add RDS view
 - Add S3 view

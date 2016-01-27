@@ -30,6 +30,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -43,6 +44,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.prefs.Preferences;
 
 
@@ -81,6 +83,18 @@ public class Controller {
     @FXML
     void initialize() {
         initTableFilter();
+        tableView.setOnMouseClicked(event -> {
+            if (event.getButton().equals(MouseButton.PRIMARY)) {
+                if (event.getClickCount() == 2) {
+                    try {
+                        final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                        execSshClient(selectedRow, selectedRow.get(columns.indexOf("Public DNS Name")).getValue());
+                    } catch (Exception e) {
+                        error(e.getMessage(), stackTraceToString(e));
+                    }
+                }
+            }
+        });
         if (!hasPreferences()) {
             try {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
@@ -154,7 +168,6 @@ public class Controller {
         launchShell.setOnAction(event -> {
             try {
                 final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
-                final int keyNameIndex = columns.indexOf("Key Name");
                 final MenuItem source = (MenuItem) event.getTarget();
                 String ip = "";
 
@@ -168,25 +181,14 @@ public class Controller {
                 if (ip.isEmpty()) {
                     return;
                 }
-                final ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/osascript",
-                        "-e", "tell app \"Terminal\"",
-                        "-e", "set currentTab to do script " +
-                        "(\"/usr/bin/ssh " + userPreferences.get("aws.ssh_options", "ec2-user") + " -i " +
-                        userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + selectedRow.get(keyNameIndex).getValue() + ".pem " +
-                        userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
-                        ip + "\")",
-                        "-e", "end tell");
-                final Process process = processBuilder.start();
-                process.waitFor();
+                execSshClient(selectedRow, ip);
             } catch (Exception e) {
                 error(e.getMessage(), stackTraceToString(e));
             }
 
 
         });
-        refreshTable.setOnAction(event -> {
-            initEc2View();
-        });
+        refreshTable.setOnAction(event -> initEc2View());
         copyCellValue.setOnAction(event -> {
             final ClipboardContent clipboardContent = new ClipboardContent();
             ObservableList<TablePosition> positionList = tableView.getSelectionModel().getSelectedCells();
@@ -522,6 +524,40 @@ public class Controller {
             }
         }
         return regionChoices.get(0);
+
+    }
+
+    private void execSshClient(List<StringProperty> selectedRow, String ip) throws Exception {
+        final int keyNameIndex = columns.indexOf("Key Name");
+        final String keyName = selectedRow.get(keyNameIndex).getValue();
+
+        final String os = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
+        ProcessBuilder processBuilder;
+        if (os.contains("mac") || os.contains("darwin")) {
+            processBuilder = new ProcessBuilder("/usr/bin/osascript",
+                    "-e", "tell app \"Terminal\"",
+                    "-e", "set currentTab to do script " +
+                    "(\"/usr/bin/ssh " + userPreferences.get("aws.ssh_options", "-o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100") + " -i " +
+                    userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + keyName + ".pem " +
+                    userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
+                    ip + "\")",
+                    "-e", "end tell");
+        } else if (os.contains("win")) {
+            processBuilder = new ProcessBuilder(System.getenv("ProgramFiles(X86)") + "\\PuTTy\\putty.exe\"", "-ssh", userPreferences.get("aws.ssh_options", "") + " -i " +
+                    userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + keyName + ".pem " +
+                    userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
+                    ip);
+//        } else if (os.contains("nux")) {
+//            processBuilder = new ProcessBuilder("/usr/bin/ssh " + userPreferences.get("aws.ssh_options", "-o CheckHostIP=no -o TCPKeepAlive=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=120 -o ServerAliveCountMax=100") + " -i " +
+//                    userPreferences.get("aws.keys_path", getDefaultKeysPath()) + File.separator + keyName + ".pem " +
+//                    userPreferences.get("aws.ec2_username", "ec2-user") + "@" +
+//                    ip);
+        } else {
+            alert(Alert.AlertType.INFORMATION, "Info", "Unsupported operating system", "Launch shell is currently supported on Windows and OSX systems.");
+            return;
+        }
+
+        processBuilder.start();
 
     }
 
