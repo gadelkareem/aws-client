@@ -264,12 +264,10 @@ public class Controller {
             columns.add("Public IP");
             columns.add("Private IP");
             columns.add("Key Name");
-            columns.add("Instance Type");
             columns.add("Launch Time");
 
 
             boolean hasFirstColumnKey = false;
-            int maxTagsCount = 0;
             reservations:
             {
                 for (Reservation reservation :
@@ -291,21 +289,22 @@ public class Controller {
                         row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
                         row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
                         row.add(new SimpleStringProperty(instance.getKeyName()));
-                        row.add(new SimpleStringProperty(instance.getInstanceType()));
                         row.add(new SimpleStringProperty(instance.getLaunchTime().toString()));
 
-                        maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
-                        for (int i = 0; i < maxTagsCount; i++) {
-                            row.add(new SimpleStringProperty(""));
-                        }
                         for (Tag tag : instance.getTags()) {
                             if (tag.getKey().equals(firstColumnKey) && !tag.getValue().isEmpty()) {
                                 row.set(0, new SimpleStringProperty(tag.getValue()));
                                 hasFirstColumnKey = true;
                             } else {
                                 String columnHeader = "Tag::" + tag.getKey();
-                                if (!columns.contains(columnHeader))
+                                if (!columns.contains(columnHeader)) {
                                     columns.add(columnHeader);
+                                }
+                                if (columns.indexOf(columnHeader) >= row.size()) {
+                                    for (int i = row.size(); i <= columns.indexOf(columnHeader); i++) {
+                                        row.add(new SimpleStringProperty(""));
+                                    }
+                                }
                                 row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getValue()));
                             }
                         }
