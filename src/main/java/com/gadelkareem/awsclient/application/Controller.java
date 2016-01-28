@@ -5,6 +5,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.regions.ServiceAbbreviations;
@@ -15,7 +16,9 @@ import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsRequest;
 import com.amazonaws.services.cloudwatch.model.GetMetricStatisticsResult;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
-import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.amazonaws.services.ec2.model.InstanceType;
+import com.amazonaws.services.ec2.model.Tag;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -41,10 +44,8 @@ import org.controlsfx.control.textfield.TextFields;
 import java.awt.*;
 import java.io.File;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
 import java.util.prefs.Preferences;
 
 
@@ -212,152 +213,165 @@ public class Controller {
         if (!regionChoices.isEmpty()) {
             return;
         }
-        try {
-            DescribeRegionsResult regionsResult = amazonEC2Client.describeRegions();
-            List<Region> regions = regionsResult.getRegions();
-            for (Region region : regions) {
-                com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(region.getRegionName());
-                if (generalRegion == null) {
-                    continue;
-                }
-                amazonEC2Client.setRegion(generalRegion);
-                List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
-                int numberOfInstances = 0;
-                if (!reservations.isEmpty()) {
-                    for (Reservation reservation : reservations) {
-                        numberOfInstances += reservation.getInstances().size();
-                    }
-                }
-                regionChoices.add(new RegionChoice(region, numberOfInstances));
-
-            }
-            regionMenu.getSelectionModel().clearSelection();
-            regionMenu.getItems().clear();
-            regionMenu.getItems().addAll(regionChoices);
-            regionMenu.getSelectionModel().select(getUserRegion());
-        } catch (Exception e) {
-            error(e.getMessage(), stackTraceToString(e));
+//        try {
+//            DescribeRegionsResult regionsResult = amazonEC2Client.describeRegions();
+//            List<Region> regions = regionsResult.getRegions();
+//            for (Region region : regions) {
+//                com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(region.getRegionName());
+//                if (generalRegion == null) {
+//                    continue;
+//                }
+//                amazonEC2Client.setRegion(generalRegion);
+//                List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
+//                int numberOfInstances = 0;
+//                if (!reservations.isEmpty()) {
+//                    for (Reservation reservation : reservations) {
+//                        numberOfInstances += reservation.getInstances().size();
+//                    }
+//                }
+//                regionChoices.add(new RegionChoice(region, numberOfInstances));
+//
+//            }
+        for (Region generalRegion : RegionUtils.getRegions()) {
+            regionChoices.add(new RegionChoice(generalRegion, randomInt(10, 60)));
         }
+        regionMenu.getSelectionModel().clearSelection();
+        regionMenu.getItems().clear();
+        regionMenu.getItems().addAll(regionChoices);
+        regionMenu.getSelectionModel().select(getUserRegion());
+//        } catch (Exception e) {
+//            error(e.getMessage(), stackTraceToString(e));
+//        }
     }
 
     private void initEc2View() {
-        try {
-            Region region = regionMenu.getSelectionModel().getSelectedItem().getRegion();
-            AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
-            amazonEC2Client.setRegion(RegionUtils.getRegion(region.getRegionName()));
-            cloudWatchClient.setEndpoint(RegionUtils.getRegion(region.getRegionName()).getServiceEndpoint(ServiceAbbreviations.CloudWatch));
+//        try {
+        Region region = regionMenu.getSelectionModel().getSelectedItem().getRegion();
+        AmazonCloudWatchClient cloudWatchClient = new AmazonCloudWatchClient(awsCredentials);
+        amazonEC2Client.setRegion(RegionUtils.getRegion(region.getName()));
+        cloudWatchClient.setEndpoint(RegionUtils.getRegion(region.getName()).getServiceEndpoint(ServiceAbbreviations.CloudWatch));
 
-            ObservableList<List<StringProperty>> rows = FXCollections.observableArrayList();
-            String firstColumnKey = "Name";
+        ObservableList<List<StringProperty>> rows = FXCollections.observableArrayList();
+        String firstColumnKey = "Name";
 
-            columns.clear();
+        columns.clear();
 
-            columns.add(firstColumnKey);
-            columns.add("Instance ID");
+        columns.add(firstColumnKey);
+        columns.add("Instance ID");
+        if (userPreferences.getBoolean("view.column.load", false)) {
+            columns.add("Instance Load");
+        }
+        columns.add("Security Group");
+        columns.add("Instance Type");
+        columns.add("Instance State");
+        columns.add("Public DNS Name");
+        columns.add("Public IP");
+        columns.add("Private IP");
+        columns.add("Key Name");
+        columns.add("Launch Time");
+
+
+        boolean hasFirstColumnKey = false;
+
+
+//            reservations:
+//            {
+//                for (Reservation reservation :
+//                        amazonEC2Client.describeInstances(new DescribeInstancesRequest()).getReservations()) {
+        for (int x = 0; x < regionMenu.getSelectionModel().getSelectedItem().getNumberOfInstances(); x++) {
+
+
+            List<StringProperty> row = new ArrayList<>();
+            row.add(new SimpleStringProperty(""));
+            row.add(new SimpleStringProperty("i-" + randomInt(888888888, 99999999)));
             if (userPreferences.getBoolean("view.column.load", false)) {
-                columns.add("Instance Load");
+//                    String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instance.getInstanceId()));
+                row.add(new SimpleStringProperty("0." + randomInt(11, 99)));
             }
-            columns.add("Security Group");
-            columns.add("Instance Type");
-            columns.add("Instance State");
-            columns.add("Public DNS Name");
-            columns.add("Public IP");
-            columns.add("Private IP");
-            columns.add("Key Name");
-            columns.add("Instance Type");
-            columns.add("Launch Time");
+            String publicIp = randomIp();
+            String privateIp = randomIp();
+            row.add(new SimpleStringProperty(randomString(10)));
+            row.add(new SimpleStringProperty(InstanceType.values()[randomInt(0, InstanceType.values().length - 1)].toString()));
+            row.add(new SimpleStringProperty(InstanceStateName.values()[randomInt(0, InstanceStateName.values().length - 1)].toString()));
+            row.add(new SimpleStringProperty("ec2-" + publicIp + "." + region.getName() + ".compute.amazonaws.com"));
+            row.add(new SimpleStringProperty(publicIp));
+            row.add(new SimpleStringProperty(privateIp));
+            row.add(new SimpleStringProperty(randomString(8)));
+            row.add(new SimpleStringProperty(new Date(Math.abs(System.currentTimeMillis() - randomInt(11111, 99999))).toString()));
 
+            List<Tag> tags = new ArrayList<>(Arrays.asList(
+                    new Tag("Name", randomString(8)),
+                    new Tag("Group", randomString(8)),
+                    new Tag("Env", randomString(8)),
+                    new Tag("Key", randomString(8)),
+                    new Tag(randomString(5), randomString(20))
+            ));
 
-            boolean hasFirstColumnKey = false;
-            int maxTagsCount = 0;
-            reservations:
-            {
-                for (Reservation reservation :
-                        amazonEC2Client.describeInstances(new DescribeInstancesRequest()).getReservations()) {
-                    for (Instance instance : reservation.getInstances()) {
-
-
-                        List<StringProperty> row = new ArrayList<StringProperty>();
-                        row.add(new SimpleStringProperty(""));
-                        row.add(new SimpleStringProperty(instance.getInstanceId()));
-                        if (userPreferences.getBoolean("view.column.load", false)) {
-                            String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instance.getInstanceId()));
-                            row.add(new SimpleStringProperty(instanceLoad));
-                        }
-                        row.add(new SimpleStringProperty(!instance.getSecurityGroups().isEmpty() ? instance.getSecurityGroups().get(0).getGroupName() : ""));
-                        row.add(new SimpleStringProperty(instance.getInstanceType()));
-                        row.add(new SimpleStringProperty(instance.getState().getName()));
-                        row.add(new SimpleStringProperty(instance.getPublicDnsName()));
-                        row.add(new SimpleStringProperty(instance.getPublicIpAddress()));
-                        row.add(new SimpleStringProperty(instance.getPrivateIpAddress()));
-                        row.add(new SimpleStringProperty(instance.getKeyName()));
-                        row.add(new SimpleStringProperty(instance.getInstanceType()));
-                        row.add(new SimpleStringProperty(instance.getLaunchTime().toString()));
-
-                        maxTagsCount = instance.getTags().size() > maxTagsCount ? instance.getTags().size() : maxTagsCount;
-                        for (int i = 0; i < maxTagsCount; i++) {
+            for (Tag tag : tags) {
+                if (tag.getKey().equals(firstColumnKey) && !tag.getValue().isEmpty()) {
+                    row.set(0, new SimpleStringProperty(tag.getValue()));
+                    hasFirstColumnKey = true;
+                } else {
+                    String columnHeader = "Tag::" + tag.getKey();
+                    if (!columns.contains(columnHeader))
+                        columns.add(columnHeader);
+                    if (columns.indexOf(columnHeader) >= row.size()) {
+                        for (int i = row.size(); i <= columns.indexOf(columnHeader); i++) {
                             row.add(new SimpleStringProperty(""));
                         }
-                        for (Tag tag : instance.getTags()) {
-                            if (tag.getKey().equals(firstColumnKey) && !tag.getValue().isEmpty()) {
-                                row.set(0, new SimpleStringProperty(tag.getValue()));
-                                hasFirstColumnKey = true;
-                            } else {
-                                String columnHeader = "Tag::" + tag.getKey();
-                                if (!columns.contains(columnHeader))
-                                    columns.add(columnHeader);
-                                row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getValue()));
-                            }
-                        }
-
-                        rows.add(row);
                     }
+                    row.set(columns.indexOf(columnHeader), new SimpleStringProperty(tag.getKey()+"_"+tag.getValue()));
                 }
             }
 
-            if (!hasFirstColumnKey) {
-                columns.remove(0);
-                for (List<StringProperty> row : rows) {
-                    row.remove(0);
+            rows.add(row);
+        }
+//                }
+//            }
+
+        if (!hasFirstColumnKey) {
+            columns.remove(0);
+            for (List<StringProperty> row : rows) {
+                row.remove(0);
+            }
+        }
+
+
+        tableView.getColumns().clear();
+
+        for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
+            tableView.getColumns().add(createColumn(columnIndex, columns.get(columnIndex)));
+        }
+
+        FilteredList<List<StringProperty>> filteredRows = new FilteredList<>(rows, p -> true);
+
+        tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredRows.setPredicate(r -> {
+                if (newValue == null || newValue.isEmpty()) {
+                    return true;
                 }
-            }
 
-
-            tableView.getColumns().clear();
-
-            for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
-                tableView.getColumns().add(createColumn(columnIndex, columns.get(columnIndex)));
-            }
-
-            FilteredList<List<StringProperty>> filteredRows = new FilteredList<>(rows, p -> true);
-
-            tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
-                filteredRows.setPredicate(r -> {
-                    if (newValue == null || newValue.isEmpty()) {
+                String lowerCaseFilter = newValue.toLowerCase();
+                for (StringProperty cell : r) {
+                    if (cell.getValue().toLowerCase().contains(lowerCaseFilter)) {
                         return true;
                     }
-
-                    String lowerCaseFilter = newValue.toLowerCase();
-                    for (StringProperty cell : r) {
-                        if (cell.getValue().toLowerCase().contains(lowerCaseFilter)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                });
+                }
+                return false;
             });
-            sortedRows = new SortedList<>(filteredRows);
-            sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
-            tableView.setItems(sortedRows);
+        });
+        sortedRows = new SortedList<>(filteredRows);
+        sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
+        tableView.setItems(sortedRows);
 
-            tableView.setColumnResizePolicy(p -> true);
-            tableView.setVisible(true);
-            tableFilter.clear();
-            tableFilter.setVisible(true);
-        } catch (Exception e) {
-            error(e.getMessage(), stackTraceToString(e));
-            initPreferences();
-        }
+        tableView.setColumnResizePolicy(p -> true);
+        tableView.setVisible(true);
+        tableFilter.clear();
+        tableFilter.setVisible(true);
+//        } catch (Exception e) {
+//            error(e.getMessage(), stackTraceToString(e));
+//            initPreferences();
+//        }
 
     }
 
@@ -467,16 +481,16 @@ public class Controller {
 
     @FXML
     private void changeRegion() {
-        try {
-            if (regionMenu.getValue() == null) {
-                return;
-            }
-            userPreferences.put("aws.region", regionMenu.getValue().getRegion().getRegionName());
-            initEc2View();
-        } catch (Exception e) {
-            error(e.getMessage(), stackTraceToString(e));
-
+//        try {
+        if (regionMenu.getValue() == null) {
+            return;
         }
+        userPreferences.put("aws.region", regionMenu.getValue().getRegion().getName());
+        initEc2View();
+//        } catch (Exception e) {
+//            error(e.getMessage(), stackTraceToString(e));
+//
+//        }
 
     }
 
@@ -507,19 +521,19 @@ public class Controller {
         }
 
         public String toString() {
-            return region.getRegionName() + "  (" + numberOfInstances + ")";
+            return region.getName() + "  (" + numberOfInstances + ")";
         }
 
     }
 
     private void loadAmazonEC2Client() {
-        this.amazonEC2Client = new AmazonEC2Client(awsCredentials);
+        amazonEC2Client = new AmazonEC2Client(awsCredentials);
     }
 
     private RegionChoice getUserRegion() {
         String regionName = userPreferences.get("aws.region", defaultRegion);
         for (RegionChoice regionChoice : regionChoices) {
-            if (regionChoice.getRegion().getRegionName().equals(regionName)) {
+            if (regionChoice.getRegion().getName().equals(regionName)) {
                 return regionChoice;
             }
         }
@@ -561,6 +575,23 @@ public class Controller {
 
     }
 
+
+    private String randomString(int len) {
+        final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        Random rnd = new Random();
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++)
+            sb.append(AB.charAt(rnd.nextInt(AB.length())));
+        return sb.toString();
+    }
+
+    private int randomInt(int min, int max) {
+        return min + (int) (Math.random() * max);
+    }
+
+    private String randomIp() {
+        return randomInt(11, 99) + "." + randomInt(11, 99) + "." + randomInt(11, 99) + "." + randomInt(11, 99);
+    }
 }
 
 
