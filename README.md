@@ -9,7 +9,6 @@ Check [releases](https://github.com/gadelkareem/aws-client/releases) for downloa
 
 
 TODO:
-- Add description and screenshots
 - Add RDS view
 - Add S3 view
 
