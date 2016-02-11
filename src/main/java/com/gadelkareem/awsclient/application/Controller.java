@@ -191,8 +191,10 @@ public class Controller {
         refreshTable.setOnAction(event -> initEc2View());
         copyCellValue.setOnAction(event -> {
             final ClipboardContent clipboardContent = new ClipboardContent();
-            ObservableList<TablePosition> positionList = tableView.getSelectionModel().getSelectedCells();
-            TablePosition position = positionList.get(0);
+            TablePosition position = tableView.getFocusModel().getFocusedCell();
+            if (position == null || position.getColumn() < 0) {
+                return;
+            }
             TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
             int row = position.getRow();
 
@@ -200,8 +202,10 @@ public class Controller {
             Clipboard.getSystemClipboard().setContent(clipboardContent);
         });
         filterUsingCellValue.setOnAction(event -> {
-            ObservableList<TablePosition> positionList = tableView.getSelectionModel().getSelectedCells();
-            TablePosition position = positionList.get(0);
+            TablePosition position = tableView.getFocusModel().getFocusedCell();
+            if (position == null || position.getColumn() < 0) {
+                return;
+            }
             TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
             int row = position.getRow();
             tableFilter.setText(column.getCellData(row).toString());
@@ -337,7 +341,11 @@ public class Controller {
                     }
 
                     String lowerCaseFilter = newValue.toLowerCase();
+
                     for (StringProperty cell : r) {
+                        if (cell.getValue() == null || cell.getValue().isEmpty() || cell.getValue().equals("")) {
+                            continue;
+                        }
                         if (cell.getValue().toLowerCase().contains(lowerCaseFilter)) {
                             return true;
                         }
