@@ -20,7 +20,7 @@ public class Main extends Application {
         try {
             Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
             Parent root = FXMLLoader.load(getClass().getResource("/application.fxml"));
-            primaryStage.setTitle("AWS Client v1.0.0");
+            primaryStage.setTitle("AWS Client v1.0.1");
             primaryStage.setScene(new Scene(root, primaryScreenBounds.getWidth() / 1.5, primaryScreenBounds.getHeight() / 1.5));
             primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/AwsClient.png")));
             primaryStage.show();
