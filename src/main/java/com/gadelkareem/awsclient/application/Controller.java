@@ -356,6 +356,8 @@ public class Controller {
             sortedRows = new SortedList<>(filteredRows);
             sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
             tableView.setItems(sortedRows);
+            tableView.getSelectionModel().setCellSelectionEnabled(true);
+
 
             tableView.setColumnResizePolicy(p -> true);
             tableView.setVisible(true);
