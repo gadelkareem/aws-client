@@ -220,25 +220,60 @@ public class Controller {
             DescribeRegionsResult regionsResult = amazonEC2Client.describeRegions();
             List<Region> regions = regionsResult.getRegions();
             for (Region region : regions) {
-                com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(region.getRegionName());
-                if (generalRegion == null) {
-                    continue;
-                }
-                amazonEC2Client.setRegion(generalRegion);
-                List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
-                int numberOfInstances = 0;
-                if (!reservations.isEmpty()) {
-                    for (Reservation reservation : reservations) {
-                        numberOfInstances += reservation.getInstances().size();
-                    }
-                }
-                regionChoices.add(new RegionChoice(region, numberOfInstances));
+                regionChoices.add(new RegionChoice(region, 0));
 
             }
             regionMenu.getSelectionModel().clearSelection();
             regionMenu.getItems().clear();
-            regionMenu.getItems().addAll(regionChoices);
+            regionMenu.getItems().setAll(regionChoices);
             regionMenu.getSelectionModel().select(getUserRegion());
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    try {
+                        for (int i = 0; i < regionChoices.size(); i++) {
+                            final RegionChoice regionChoice = regionChoices.get(i);
+                            com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(regionChoice.getRegion().getRegionName());
+                            if (generalRegion == null) {
+//                                System.out.println("deleted" + regionChoice.getRegion().toString());
+                                Platform.runLater(() -> {
+                                    regionMenu.getItems().remove(regionMenu.getItems().indexOf(regionChoice));
+                                });
+//                                regionChoices.remove(i);
+                                continue;
+                            }
+                            amazonEC2Client.setRegion(generalRegion);
+                            List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
+                            int numberOfInstances = 0;
+                            if (!reservations.isEmpty()) {
+                                for (Reservation reservation : reservations) {
+                                    numberOfInstances += reservation.getInstances().size();
+                                }
+                            }
+                            regionChoice.setNumberOfInstances(numberOfInstances + 1);
+//                            System.out.println(regionChoice.getRegion().toString());
+                            Platform.runLater(() -> {
+                                regionMenu.getItems().set(regionMenu.getItems().indexOf(regionChoice), regionChoice);
+                            });
+                        }
+                        Platform.runLater(() -> {
+                            regionMenu.getSelectionModel().select(getUserRegion());
+                        });
+//                        System.out.println("deleted" + regionChoices);
+//                        Platform.runLater(() -> {
+//                            System.out.print(regionChoices);
+//                            regionMenu.getItems().clear();
+//                            regionMenu.getItems().setAll(regionChoices);
+//                            regionMenu.getSelectionModel().select(getUserRegion());
+//                        });
+                    } catch (Exception e) {
+                        System.out.print(e);
+                    }
+                }
+
+            }).start();
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
         }
@@ -500,7 +535,7 @@ public class Controller {
 
     private class RegionChoice {
         private final Region region;
-        private final int numberOfInstances;
+        private int numberOfInstances;
 
         public RegionChoice(Region region, int numberOfInstances) {
             this.region = region;
@@ -513,6 +548,10 @@ public class Controller {
 
         public int getNumberOfInstances() {
             return numberOfInstances;
+        }
+
+        public void setNumberOfInstances(int numberOfInstances) {
+            this.numberOfInstances = numberOfInstances;
         }
 
         public String toString() {
