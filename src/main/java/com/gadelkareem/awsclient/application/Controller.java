@@ -228,51 +228,44 @@ public class Controller {
             regionMenu.getItems().setAll(regionChoices);
             regionMenu.getSelectionModel().select(getUserRegion());
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-
-                    try {
-                        for (int i = 0; i < regionChoices.size(); i++) {
-                            final RegionChoice regionChoice = regionChoices.get(i);
-                            com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(regionChoice.getRegion().getRegionName());
-                            if (generalRegion == null) {
-//                                System.out.println("deleted" + regionChoice.getRegion().toString());
-                                Platform.runLater(() -> {
-                                    regionMenu.getItems().remove(regionMenu.getItems().indexOf(regionChoice));
-                                });
-//                                regionChoices.remove(i);
-                                continue;
-                            }
-                            amazonEC2Client.setRegion(generalRegion);
-                            List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
-                            int numberOfInstances = 0;
-                            if (!reservations.isEmpty()) {
-                                for (Reservation reservation : reservations) {
-                                    numberOfInstances += reservation.getInstances().size();
-                                }
-                            }
-                            regionChoice.setNumberOfInstances(numberOfInstances + 1);
-//                            System.out.println(regionChoice.getRegion().toString());
+            new Thread(() -> {
+                try {
+                    for (int i = 0; i < regionChoices.size(); i++) {
+                        final RegionChoice regionChoice = regionChoices.get(i);
+                        com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(regionChoice.getRegion().getRegionName());
+                        if (generalRegion == null) {
                             Platform.runLater(() -> {
-                                regionMenu.getItems().set(regionMenu.getItems().indexOf(regionChoice), regionChoice);
+                                RegionChoice selectedRegionChoice = regionMenu.getSelectionModel().getSelectedItem();
+                                regionMenu.getItems().remove(regionMenu.getItems().indexOf(regionChoice));
+                                if (selectedRegionChoice == regionChoice) {
+                                    regionMenu.getSelectionModel().select(getUserRegion());
+                                }
                             });
+                            regionChoices.remove(regionChoice);
+                            i--;
+                            continue;
                         }
+                        amazonEC2Client.setRegion(generalRegion);
+                        List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
+                        int numberOfInstances = 0;
+                        if (!reservations.isEmpty()) {
+                            for (Reservation reservation : reservations) {
+                                numberOfInstances += reservation.getInstances().size();
+                            }
+                        }
+                        regionChoice.setNumberOfInstances(numberOfInstances);
                         Platform.runLater(() -> {
-                            regionMenu.getSelectionModel().select(getUserRegion());
+                            RegionChoice selectedRegionChoice = regionMenu.getSelectionModel().getSelectedItem();
+                            regionMenu.getItems().set(regionMenu.getItems().indexOf(regionChoice), regionChoice);
+                            if (selectedRegionChoice == regionChoice) {
+                                regionMenu.getSelectionModel().select(getUserRegion());
+                            }
                         });
-//                        System.out.println("deleted" + regionChoices);
-//                        Platform.runLater(() -> {
-//                            System.out.print(regionChoices);
-//                            regionMenu.getItems().clear();
-//                            regionMenu.getItems().setAll(regionChoices);
-//                            regionMenu.getSelectionModel().select(getUserRegion());
-//                        });
-                    } catch (Exception e) {
-                        System.out.print(e);
                     }
-                }
 
+                } catch (Exception e) {
+                    System.out.print(e);
+                }
             }).start();
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
