@@ -21,6 +21,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
@@ -51,7 +52,7 @@ import java.util.prefs.Preferences;
 public class Controller {
 
 
-    public TableView tableView;
+    public TableView<List<StringProperty>> tableView;
     public ChoiceBox<RegionChoice> regionMenu;
     public Menu launchShell;
     public MenuItem refreshTable;
@@ -70,6 +71,7 @@ public class Controller {
 
     private CustomTextField tableFilter;
 
+    private ObservableSet<Integer> selectedRowIndexes = FXCollections.observableSet();
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
     private AWSCredentials awsCredentials;
@@ -87,7 +89,7 @@ public class Controller {
             if (event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getClickCount() == 2) {
                     try {
-                        final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                        final List<StringProperty> selectedRow = tableView.getSelectionModel().getSelectedItem();
                         execSshClient(selectedRow, selectedRow.get(columns.indexOf("Public DNS Name")).getValue());
                     } catch (Exception e) {
                         error(e.getMessage(), stackTraceToString(e));
@@ -95,6 +97,7 @@ public class Controller {
                 }
             }
         });
+
         if (!hasPreferences()) {
             try {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
@@ -167,7 +170,7 @@ public class Controller {
     private void initContextMenu() {
         launchShell.setOnAction(event -> {
             try {
-                final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                final List<StringProperty> selectedRow = tableView.getSelectionModel().getSelectedItem();
                 final MenuItem source = (MenuItem) event.getTarget();
                 String ip = "";
 
@@ -195,7 +198,7 @@ public class Controller {
             if (position == null || position.getColumn() < 0) {
                 return;
             }
-            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            TableColumn column = position.getTableColumn();
             int row = position.getRow();
 
             clipboardContent.putString(column.getCellData(row).toString());
@@ -206,7 +209,7 @@ public class Controller {
             if (position == null || position.getColumn() < 0) {
                 return;
             }
-            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            TableColumn column = position.getTableColumn();
             int row = position.getRow();
             tableFilter.setText(column.getCellData(row).toString());
         });
@@ -364,11 +367,12 @@ public class Controller {
 
             tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
                 filteredRows.setPredicate(r -> {
-                    if (newValue == null || newValue.isEmpty()) {
+                    String value = newValue.trim();
+                    if (value.isEmpty()) {
                         return true;
                     }
 
-                    String lowerCaseFilter = newValue.toLowerCase();
+                    String lowerCaseFilter = value.toLowerCase();
 
                     for (StringProperty cell : r) {
                         if (cell.getValue() == null || cell.getValue().isEmpty() || cell.getValue().equals("")) {
@@ -384,7 +388,6 @@ public class Controller {
             sortedRows = new SortedList<>(filteredRows);
             sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
             tableView.setItems(sortedRows);
-            tableView.getSelectionModel().setCellSelectionEnabled(true);
 
 
             tableView.setColumnResizePolicy(p -> true);

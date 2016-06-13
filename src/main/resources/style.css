@@ -1,4 +1,4 @@
-.table-row-cell:selected .text {
-       -fx-fill: red ;
-
+.table-row-cell:selected-row {
+    -fx-background-color: lightskyblue ;
 }
+
