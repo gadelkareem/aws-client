@@ -1,7 +1,6 @@
 package com.gadelkareem.awsclient.application;
 
 
-import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -21,6 +20,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
@@ -51,7 +51,7 @@ import java.util.prefs.Preferences;
 public class Controller {
 
 
-    public TableView tableView;
+    public TableView<List<StringProperty>> tableView;
     public ChoiceBox<RegionChoice> regionMenu;
     public Menu launchShell;
     public MenuItem refreshTable;
@@ -70,6 +70,7 @@ public class Controller {
 
     private CustomTextField tableFilter;
 
+    private ObservableSet<Integer> selectedRowIndexes = FXCollections.observableSet();
     private Preferences userPreferences = Preferences.userNodeForPackage(getClass());
     private String defaultRegion = Regions.EU_WEST_1.getName();
     private AWSCredentials awsCredentials;
@@ -87,7 +88,7 @@ public class Controller {
             if (event.getButton().equals(MouseButton.PRIMARY)) {
                 if (event.getClickCount() == 2) {
                     try {
-                        final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                        final List<StringProperty> selectedRow = tableView.getSelectionModel().getSelectedItem();
                         execSshClient(selectedRow, selectedRow.get(columns.indexOf("Public DNS Name")).getValue());
                     } catch (Exception e) {
                         error(e.getMessage(), stackTraceToString(e));
@@ -95,6 +96,7 @@ public class Controller {
                 }
             }
         });
+
         if (!hasPreferences()) {
             try {
                 awsCredentials = new DefaultAWSCredentialsProviderChain().getCredentials();
@@ -167,7 +169,7 @@ public class Controller {
     private void initContextMenu() {
         launchShell.setOnAction(event -> {
             try {
-                final List<StringProperty> selectedRow = ((List<StringProperty>) tableView.getSelectionModel().getSelectedItem());
+                final List<StringProperty> selectedRow = tableView.getSelectionModel().getSelectedItem();
                 final MenuItem source = (MenuItem) event.getTarget();
                 String ip = "";
 
@@ -195,7 +197,7 @@ public class Controller {
             if (position == null || position.getColumn() < 0) {
                 return;
             }
-            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            TableColumn column = position.getTableColumn();
             int row = position.getRow();
 
             clipboardContent.putString(column.getCellData(row).toString());
@@ -206,7 +208,7 @@ public class Controller {
             if (position == null || position.getColumn() < 0) {
                 return;
             }
-            TableColumn column = (TableColumn) tableView.getColumns().get(position.getColumn());
+            TableColumn column = position.getTableColumn();
             int row = position.getRow();
             tableFilter.setText(column.getCellData(row).toString());
         });
@@ -220,25 +222,53 @@ public class Controller {
             DescribeRegionsResult regionsResult = amazonEC2Client.describeRegions();
             List<Region> regions = regionsResult.getRegions();
             for (Region region : regions) {
-                com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(region.getRegionName());
-                if (generalRegion == null) {
-                    continue;
-                }
-                amazonEC2Client.setRegion(generalRegion);
-                List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
-                int numberOfInstances = 0;
-                if (!reservations.isEmpty()) {
-                    for (Reservation reservation : reservations) {
-                        numberOfInstances += reservation.getInstances().size();
-                    }
-                }
-                regionChoices.add(new RegionChoice(region, numberOfInstances));
+                regionChoices.add(new RegionChoice(region, 0));
 
             }
             regionMenu.getSelectionModel().clearSelection();
             regionMenu.getItems().clear();
-            regionMenu.getItems().addAll(regionChoices);
+            regionMenu.getItems().setAll(regionChoices);
             regionMenu.getSelectionModel().select(getUserRegion());
+
+            new Thread(() -> {
+                try {
+                    for (int i = 0; i < regionChoices.size(); i++) {
+                        final RegionChoice regionChoice = regionChoices.get(i);
+                        com.amazonaws.regions.Region generalRegion = RegionUtils.getRegion(regionChoice.getRegion().getRegionName());
+                        if (generalRegion == null) {
+                            Platform.runLater(() -> {
+                                RegionChoice selectedRegionChoice = regionMenu.getSelectionModel().getSelectedItem();
+                                regionMenu.getItems().remove(regionMenu.getItems().indexOf(regionChoice));
+                                if (selectedRegionChoice == regionChoice) {
+                                    regionMenu.getSelectionModel().select(getUserRegion());
+                                }
+                            });
+                            regionChoices.remove(regionChoice);
+                            i--;
+                            continue;
+                        }
+                        amazonEC2Client.setRegion(generalRegion);
+                        List<Reservation> reservations = amazonEC2Client.describeInstances().getReservations();
+                        int numberOfInstances = 0;
+                        if (!reservations.isEmpty()) {
+                            for (Reservation reservation : reservations) {
+                                numberOfInstances += reservation.getInstances().size();
+                            }
+                        }
+                        regionChoice.setNumberOfInstances(numberOfInstances);
+                        Platform.runLater(() -> {
+                            RegionChoice selectedRegionChoice = regionMenu.getSelectionModel().getSelectedItem();
+                            regionMenu.getItems().set(regionMenu.getItems().indexOf(regionChoice), regionChoice);
+                            if (selectedRegionChoice == regionChoice) {
+                                regionMenu.getSelectionModel().select(getUserRegion());
+                            }
+                        });
+                    }
+
+                } catch (Exception e) {
+                    System.out.print(e);
+                }
+            }).start();
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
         }
@@ -279,12 +309,11 @@ public class Controller {
                     for (Instance instance : reservation.getInstances()) {
 
 
-                        List<StringProperty> row = new ArrayList<StringProperty>();
+                        List<StringProperty> row = new ArrayList<>();
                         row.add(new SimpleStringProperty(""));
                         row.add(new SimpleStringProperty(instance.getInstanceId()));
                         if (userPreferences.getBoolean("view.column.load", false)) {
-                            String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instance.getInstanceId()));
-                            row.add(new SimpleStringProperty(instanceLoad));
+                            row.add(new SimpleStringProperty(""));
                         }
                         row.add(new SimpleStringProperty(!instance.getSecurityGroups().isEmpty() ? instance.getSecurityGroups().get(0).getGroupName() : ""));
                         row.add(new SimpleStringProperty(instance.getInstanceType()));
@@ -332,15 +361,17 @@ public class Controller {
                 tableView.getColumns().add(createColumn(columnIndex, columns.get(columnIndex)));
             }
 
+
             FilteredList<List<StringProperty>> filteredRows = new FilteredList<>(rows, p -> true);
 
             tableFilter.textProperty().addListener((observable, oldValue, newValue) -> {
                 filteredRows.setPredicate(r -> {
-                    if (newValue == null || newValue.isEmpty()) {
+                    String value = newValue.trim();
+                    if (value.isEmpty()) {
                         return true;
                     }
 
-                    String lowerCaseFilter = newValue.toLowerCase();
+                    String lowerCaseFilter = value.toLowerCase();
 
                     for (StringProperty cell : r) {
                         if (cell.getValue() == null || cell.getValue().isEmpty() || cell.getValue().equals("")) {
@@ -356,11 +387,32 @@ public class Controller {
             sortedRows = new SortedList<>(filteredRows);
             sortedRows.comparatorProperty().bind(tableView.comparatorProperty());
             tableView.setItems(sortedRows);
-
             tableView.setColumnResizePolicy(p -> true);
             tableView.setVisible(true);
             tableFilter.clear();
             tableFilter.setVisible(true);
+            if (userPreferences.getBoolean("view.column.load", false)) {
+                final int columnsInstanceIdIndex = columns.indexOf("Instance ID");
+                final int columnsInstanceLoadIndex = columns.indexOf("Instance Load");
+                new Thread(() -> {
+                    try {
+                        for (List<StringProperty> row : sortedRows) {
+                            String instanceId = row.get(columnsInstanceIdIndex).getValue();
+                            if (!instanceId.isEmpty()) {
+                                String instanceLoad = String.format("%.2g%n", getInstanceAverageLoad(cloudWatchClient, instanceId));
+                                row.set(columnsInstanceLoadIndex, new SimpleStringProperty(instanceLoad));
+                            }
+                        }
+                        Thread.sleep(1000);
+                        Platform.runLater(() -> {
+                            tableView.getColumns().get(columnsInstanceLoadIndex).setVisible(false);
+                            tableView.getColumns().get(columnsInstanceLoadIndex).setVisible(true);
+                        });
+                    } catch (Exception e) {
+                        System.out.print(e);
+                    }
+                }).start();
+            }
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
             initPreferences();
@@ -389,33 +441,26 @@ public class Controller {
     }
 
     private double getInstanceAverageLoad(AmazonCloudWatchClient cloudWatchClient, String instanceId) {
-        try {
 
-            long offsetInMilliseconds = 1000 * 60 * 60;
-            GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
-                    .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
-                    .withNamespace("AWS/EC2")
-                    .withPeriod(60 * 60)
-                    .withDimensions(new Dimension().withName("InstanceId").withValue(instanceId))
-                    .withMetricName("CPUUtilization")
-                    .withStatistics("Average", "Maximum")
-                    .withEndTime(new Date());
-            GetMetricStatisticsResult getMetricStatisticsResult = cloudWatchClient.getMetricStatistics(request);
+        long offsetInMilliseconds = 1000 * 60 * 60;
+        GetMetricStatisticsRequest request = new GetMetricStatisticsRequest()
+                .withStartTime(new Date(new Date().getTime() - offsetInMilliseconds))
+                .withNamespace("AWS/EC2")
+                .withPeriod(60 * 60)
+                .withDimensions(new Dimension().withName("InstanceId").withValue(instanceId))
+                .withMetricName("CPUUtilization")
+                .withStatistics("Average", "Maximum")
+                .withEndTime(new Date());
+        GetMetricStatisticsResult getMetricStatisticsResult = cloudWatchClient.getMetricStatistics(request);
 
-            double avgCPUUtilization = 0;
-            List dataPoint = getMetricStatisticsResult.getDatapoints();
-            for (Object aDataPoint : dataPoint) {
-                Datapoint dp = (Datapoint) aDataPoint;
-                avgCPUUtilization = dp.getAverage();
-            }
-
-            return avgCPUUtilization;
-
-        } catch (AmazonServiceException e) {
-            error(e.getMessage(), e.getRawResponseContent());
-
+        double avgCPUUtilization = 0;
+        List dataPoint = getMetricStatisticsResult.getDatapoints();
+        for (Object aDataPoint : dataPoint) {
+            Datapoint dp = (Datapoint) aDataPoint;
+            avgCPUUtilization = dp.getAverage();
         }
-        return 0;
+
+        return avgCPUUtilization;
     }
 
     private Alert alert(Alert.AlertType alertType, String title, String header, String text) {
@@ -440,7 +485,7 @@ public class Controller {
     @FXML
     private void about() {
         try {
-            Desktop.getDesktop().browse(new URI("https://github.com/gadelkareem/aws-client"));
+            Desktop.getDesktop().browse(new URI("http://gadelkareem.com/aws-client"));
         } catch (Exception e) {
             error(e.getMessage(), stackTraceToString(e));
 
@@ -498,7 +543,7 @@ public class Controller {
 
     private class RegionChoice {
         private final Region region;
-        private final int numberOfInstances;
+        private int numberOfInstances;
 
         public RegionChoice(Region region, int numberOfInstances) {
             this.region = region;
@@ -511,6 +556,10 @@ public class Controller {
 
         public int getNumberOfInstances() {
             return numberOfInstances;
+        }
+
+        public void setNumberOfInstances(int numberOfInstances) {
+            this.numberOfInstances = numberOfInstances;
         }
 
         public String toString() {
@@ -569,5 +618,6 @@ public class Controller {
     }
 
 }
+
 
 

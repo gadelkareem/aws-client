@@ -6,7 +6,7 @@
 
     <groupId>application</groupId>
     <artifactId>AwsClient</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,7 +31,7 @@
                     <mainClass>com.gadelkareem.awsclient.application.Main</mainClass>
                     <identifier>awsclient</identifier>
                     <vendor>gadelkareem.com</vendor>
-                    <nativeReleaseVersion>1.0.1</nativeReleaseVersion>
+                    <nativeReleaseVersion>1.1.0</nativeReleaseVersion>
                     <needShortcut>true</needShortcut>
                     <needMenu>true</needMenu>
                 </configuration>
