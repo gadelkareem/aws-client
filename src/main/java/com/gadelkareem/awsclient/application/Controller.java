@@ -28,9 +28,11 @@ import javafx.scene.control.*;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -435,6 +437,18 @@ public class Controller {
             } else {
                 return row.get(columnIndex);
             }
+
+        });
+
+        column.setCellFactory(column1 -> {
+            TableCell<List<StringProperty>, String> cell = new TextFieldTableCell<>();
+            cell.addEventFilter(MouseEvent.MOUSE_CLICKED, e ->
+                    cell.setStyle("-fx-border-color:black black black black;-fx-background-color:#005BD1;-fx-text-fill:white")
+            );
+            cell.addEventFilter(MouseEvent.MOUSE_EXITED, e ->
+                    cell.setStyle("")
+            );
+            return cell;
 
         });
         return column;
