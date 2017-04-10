@@ -6,7 +6,7 @@
 
     <groupId>application</groupId>
     <artifactId>AwsClient</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,7 +31,7 @@
                     <mainClass>com.gadelkareem.awsclient.application.Main</mainClass>
                     <identifier>awsclient</identifier>
                     <vendor>gadelkareem.com</vendor>
-                    <nativeReleaseVersion>1.1.0</nativeReleaseVersion>
+                    <nativeReleaseVersion>1.2.0</nativeReleaseVersion>
                     <needShortcut>true</needShortcut>
                     <needMenu>true</needMenu>
                 </configuration>
@@ -62,17 +62,17 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
-            <version>1.10.37</version>
+            <version>1.11.117</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-cloudwatch</artifactId>
-            <version>1.10.37</version>
+            <version>1.11.117</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-ec2</artifactId>
-            <version>1.10.37</version>
+            <version>1.11.117</version>
         </dependency>
         <dependency>
             <groupId>org.controlsfx</groupId>
